@@ -8,11 +8,13 @@ import UserDashboard from './pages/UserDashboard';
 import ProviderDashboard from './pages/ProviderDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import Navbar from './components/Navbar';
 
 const App = () => {
     return (
         <AuthProvider>
             <Router>
+                <Navbar />
                 <Routes>
                     {/* Public routes */}
                     <Route path="/login" element={<Login />} />
