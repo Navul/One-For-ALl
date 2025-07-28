@@ -17,11 +17,12 @@ const ServiceList = () => {
         fetchServices();
     }, []);
 
+    const servicesArray = Array.isArray(services) ? services : [];
     return (
         <div>
             <h2>Available Services</h2>
             <ul>
-                {services.map(service => (
+                {servicesArray.map(service => (
                     <li key={service._id}>
                         <h3>{service.title}</h3>
                         <p>{service.description}</p>
