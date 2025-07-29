@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const UserDashboard = () => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const [services, setServices] = useState([]);
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -38,9 +38,7 @@ const UserDashboard = () => {
         }
     };
 
-    const handleLogout = () => {
-        logout();
-    };
+
 
     if (loading) {
         return <div className="loading">Loading your dashboard...</div>;
@@ -52,9 +50,7 @@ const UserDashboard = () => {
                 <div className="header-content">
                     <h1>Welcome, {user?.name}!</h1>
                     <p className="user-role">Client Dashboard</p>
-                    <button onClick={handleLogout} className="logout-btn">
-                        Logout
-                    </button>
+
                 </div>
             </header>
 
@@ -95,24 +91,7 @@ const UserDashboard = () => {
                         )}
                     </div>
 
-                    {/* Available Services */}
-                    <div className="services-section">
-                        <h2>Browse Services</h2>
-                        {services.length > 0 ? (
-                            <div className="services-grid">
-                                {services.slice(0, 6).map((service, index) => (
-                                    <div key={service._id || index} className="service-card">
-                                        <h4>{service.name}</h4>
-                                        <p>{service.description}</p>
-                                        <p className="price">${service.price || '0'}</p>
-                                        <button className="book-btn">Book Now</button>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="no-data">No services available at the moment.</p>
-                        )}
-                    </div>
+
                 </div>
             </main>
 

@@ -45,9 +45,11 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 const serviceRoutes = require('./routes/serviceRoutes');
 const authRoutes = require('./routes/authRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
 
 serviceRoutes(app);
 app.use('/api/auth', authRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 // Start the server
 app.listen(PORT, () => {

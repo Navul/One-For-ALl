@@ -11,7 +11,7 @@ const Navbar = () => {
       links = [
         { to: '/', label: 'Home' },
         { to: '/user-dashboard', label: 'Dashboard' },
-        { to: '/', label: 'Browse Services' }
+        { to: '/browse-services', label: 'Browse Services' }
       ];
     } else if (user.role === 'provider') {
       links = [

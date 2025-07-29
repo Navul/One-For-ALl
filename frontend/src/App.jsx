@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Home from './pages/Home';
+import BrowseServices from './pages/BrowseServices';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import UserDashboard from './pages/UserDashboard';
@@ -20,6 +21,7 @@ const App = () => {
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/" element={<Home />} />
+                    <Route path="/browse-services" element={<BrowseServices />} />
                     
                     {/* Protected role-based dashboard routes */}
                     <Route 

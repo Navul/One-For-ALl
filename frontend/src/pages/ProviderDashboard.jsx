@@ -1,8 +1,70 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
+function AddServiceForm({ onServiceAdded, onClose }) {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [price, setPrice] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        try {
+            const token = localStorage.getItem('token');
+            console.log('Token:', token); // Debug token
+            console.log('Sending data:', { title, description, price }); // Debug data
+            
+            const res = await fetch('/api/services', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ title, description, price })
+            });
+            
+            const data = await res.json();
+            console.log('Response:', data); // Debug response
+            
+            if (!res.ok) {
+                throw new Error(data.message || `HTTP error! status: ${res.status}`);
+            }
+            
+            setTitle(''); 
+            setDescription(''); 
+            setPrice('');
+            onServiceAdded && onServiceAdded();
+            onClose && onClose();
+        } catch (err) {
+            console.error('Error adding service:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="add-service-form">
+            <h3>Add New Service</h3>
+            <form onSubmit={handleSubmit}>
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Service Name" className="form-input" required />
+                <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" className="form-textarea" required></textarea>
+                <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="Price" className="form-input" min="0" required />
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                    <button type="submit" className="submit-btn" disabled={loading}>{loading ? 'Adding...' : 'Add Service'}</button>
+                    <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
+                </div>
+                {error && <p style={{ color: 'red' }}>{error}</p>}
+            </form>
+        </div>
+    );
+}
+
 const ProviderDashboard = () => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const [myServices, setMyServices] = useState([]);
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -44,9 +106,7 @@ const ProviderDashboard = () => {
         }
     };
 
-    const handleLogout = () => {
-        logout();
-    };
+    // Removed unused handleLogout function
 
     if (loading) {
         return <div className="loading">Loading your dashboard...</div>;
@@ -60,9 +120,6 @@ const ProviderDashboard = () => {
                         <h1>Welcome, {user?.name}!</h1>
                         <p className="user-role">Service Provider Dashboard</p>
                     </div>
-                    <button onClick={handleLogout} className="logout-btn">
-                        Logout
-                    </button>
                 </div>
             </header>
 
@@ -100,22 +157,14 @@ const ProviderDashboard = () => {
                         </div>
                         
                         {showAddService && (
-                            <div className="add-service-form">
-                                <h3>Add New Service</h3>
-                                <form>
-                                    <input type="text" placeholder="Service Name" className="form-input" />
-                                    <textarea placeholder="Description" className="form-textarea"></textarea>
-                                    <input type="number" placeholder="Price" className="form-input" />
-                                    <button type="submit" className="submit-btn">Add Service</button>
-                                </form>
-                            </div>
+                            <AddServiceForm onServiceAdded={fetchProviderData} onClose={() => setShowAddService(false)} />
                         )}
 
                         {myServices.length > 0 ? (
                             <div className="services-grid">
                                 {myServices.map((service, index) => (
                                     <div key={service._id || index} className="service-card">
-                                        <h4>{service.name}</h4>
+                                        <h4>{service.title}</h4>
                                         <p>{service.description}</p>
                                         <p className="price">${service.price || '0'}</p>
                                         <div className="service-actions">
