@@ -65,7 +65,15 @@ exports.getUserBookings = async (req, res) => {
 // Get bookings for a provider
 exports.getProviderBookings = async (req, res) => {
     try {
-        const bookings = await Booking.find({ provider: req.user._id }).populate('service user');
+        // First, find all services created by this provider
+        const providerServices = await Service.find({ provider: req.user._id });
+        const serviceIds = providerServices.map(service => service._id);
+        
+        // Then find all bookings for those services
+        const bookings = await Booking.find({ 
+            service: { $in: serviceIds } 
+        }).populate('service user');
+        
         res.json({ success: true, bookings });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error fetching bookings', error: error.message });
