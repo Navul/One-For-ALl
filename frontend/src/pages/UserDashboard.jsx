@@ -14,22 +14,22 @@ const UserDashboard = () => {
     const fetchUserData = async () => {
         try {
             // Fetch available services
-            const servicesResponse = await fetch('/api/services');
+            const servicesResponse = await fetch('http://localhost:5000/api/services');
             if (servicesResponse.ok) {
                 const servicesData = await servicesResponse.json();
-                setServices(servicesData.data || []);
+                setServices(servicesData || []);
             }
 
             // Fetch user bookings
             const token = localStorage.getItem('token');
-            const bookingsResponse = await fetch('/api/bookings/my-bookings', {
+            const bookingsResponse = await fetch('http://localhost:5000/api/bookings/user', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
             if (bookingsResponse.ok) {
                 const bookingsData = await bookingsResponse.json();
-                setBookings(bookingsData.data || []);
+                setBookings(bookingsData.bookings || []);
             }
         } catch (error) {
             console.error('Error fetching user data:', error);
@@ -77,9 +77,10 @@ const UserDashboard = () => {
                         {bookings.length > 0 ? (
                             <div className="bookings-list">
                                 {bookings.slice(0, 5).map((booking, index) => (
-                                    <div key={index} className="booking-item">
-                                        <h4>{booking.serviceName || 'Service'}</h4>
-                                        <p>Date: {booking.date || 'TBD'}</p>
+                                    <div key={booking._id || index} className="booking-item">
+                                        <h4>{booking.service?.title || 'Service'}</h4>
+                                        <p>Date: {new Date(booking.date).toLocaleDateString() || 'TBD'}</p>
+                                        <p>Price: ${booking.service?.price || 'N/A'}</p>
                                         <span className={`status ${booking.status || 'pending'}`}>
                                             {booking.status || 'Pending'}
                                         </span>
@@ -194,26 +195,27 @@ const UserDashboard = () => {
                 }
 
                 .booking-item {
-                    background: #f7fafc;
+                    background: white;
                     padding: 1rem;
                     border-radius: 6px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
+                    border: 1px solid #e2e8f0;
+                    margin-bottom: 0.5rem;
                 }
 
                 .booking-item h4 {
-                    margin: 0;
+                    margin: 0 0 0.5rem 0;
                     color: #2d3748;
                 }
 
                 .booking-item p {
-                    margin: 0.25rem 0 0 0;
+                    margin: 0.25rem 0;
                     color: #666;
                     font-size: 0.875rem;
                 }
 
                 .status {
+                    display: inline-block;
+                    margin-top: 0.5rem;
                     padding: 0.25rem 0.5rem;
                     border-radius: 4px;
                     font-size: 0.75rem;

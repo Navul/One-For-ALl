@@ -19,6 +19,26 @@ exports.createBooking = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Service not found' });
         }
         
+        // Check if user already has a booking on the same date
+        const bookingDate = new Date(date);
+        const startOfDay = new Date(bookingDate.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(bookingDate.setHours(23, 59, 59, 999));
+        
+        const existingBooking = await Booking.findOne({
+            user: req.user._id,
+            date: {
+                $gte: startOfDay,
+                $lte: endOfDay
+            }
+        });
+        
+        if (existingBooking) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'You already have a booking on this date. Only one booking per day is allowed.' 
+            });
+        }
+        
         const booking = await Booking.create({
             service: serviceId,
             user: req.user._id,
