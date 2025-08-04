@@ -39,14 +39,7 @@ const protect = async (req, res, next) => {
             });
         }
 
-        // Check session validation (optional - for extra security)
-        if (req.session && req.session.userId && req.session.userId.toString() !== user._id.toString()) {
-            return res.status(401).json({
-                success: false,
-                message: 'Session mismatch. Please log in again.'
-            });
-        }
-
+        // Session validation removed for JWT-only authentication
         req.user = user;
         next();
     } catch (error) {

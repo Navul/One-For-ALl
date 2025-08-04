@@ -5,16 +5,27 @@ const Service = require('../models/service');
 exports.createBooking = async (req, res) => {
     try {
         const { serviceId, date } = req.body;
+        
+        // Validate required fields
+        if (!serviceId) {
+            return res.status(400).json({ success: false, message: 'Service ID is required' });
+        }
+        if (!date || date.trim() === '') {
+            return res.status(400).json({ success: false, message: 'Start date is required' });
+        }
+        
         const service = await Service.findById(serviceId);
         if (!service) {
             return res.status(404).json({ success: false, message: 'Service not found' });
         }
+        
         const booking = await Booking.create({
             service: serviceId,
-            user: req.session.userId,
+            user: req.user._id,
             provider: service.provider,
-            date
+            date: new Date(date)
         });
+        
         res.status(201).json({ success: true, booking });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Booking failed', error: error.message });
@@ -24,7 +35,7 @@ exports.createBooking = async (req, res) => {
 // Get bookings for a user
 exports.getUserBookings = async (req, res) => {
     try {
-        const bookings = await Booking.find({ user: req.session.userId }).populate('service');
+        const bookings = await Booking.find({ user: req.user._id }).populate('service');
         res.json({ success: true, bookings });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error fetching bookings', error: error.message });
@@ -34,7 +45,7 @@ exports.getUserBookings = async (req, res) => {
 // Get bookings for a provider
 exports.getProviderBookings = async (req, res) => {
     try {
-        const bookings = await Booking.find({ provider: req.session.userId }).populate('service user');
+        const bookings = await Booking.find({ provider: req.user._id }).populate('service user');
         res.json({ success: true, bookings });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error fetching bookings', error: error.message });
