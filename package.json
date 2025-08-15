@@ -1,5 +1,5 @@
 {
-  "name": "localconnect-community-services-directory",
+  "name": "oneforall-community-services-directory",
   "version": "1.0.0",
   "description": "A web app where local service providers can list services, and users can book them.",
   "main": "backend/app.js",

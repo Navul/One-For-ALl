@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ServiceList from '../components/ServiceList';
+import '../styles/Home.css';
 
 const Home = () => {
     const { isAuthenticated, user } = useAuth();
     const navigate = useNavigate();
+    const ctaRef = useRef(null);
 
     useEffect(() => {
         // Redirect authenticated users to their appropriate dashboard
@@ -25,215 +27,238 @@ const Home = () => {
         }
     }, [isAuthenticated, user, navigate]);
 
+    useEffect(() => {
+        // Enhanced scroll animation observer
+        const observerOptions = {
+            threshold: 0.2,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in');
+                }
+            });
+        }, observerOptions);
+
+        // Observe feature cards
+        const featureCards = document.querySelectorAll('.feature-card');
+        featureCards.forEach(card => observer.observe(card));
+
+        // Observe CTA section
+        if (ctaRef.current) {
+            observer.observe(ctaRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, []);
+
     return (
         <div className="home-page">
-            <header className="hero-section">
-                <div className="hero-content">
-                    <h1>Welcome to LocalConnect</h1>
-                    <p>Your one-stop directory for local services.</p>
-                    <p>Connect with trusted service providers in your community.</p>
-                    
-                    {!isAuthenticated && (
-                        <div className="hero-actions">
-                            <Link to="/signup" className="cta-button primary">
-                                Get Started
-                            </Link>
-                            <Link to="/login" className="cta-button secondary">
-                                Sign In
-                            </Link>
-                        </div>
-                    )}
+            {/* Hero Section with Animated Background */}
+            <section className="hero-section">
+                <div className="hero-background">
+                    <div className="floating-shapes">
+                        <div className="shape shape-1"></div>
+                        <div className="shape shape-2"></div>
+                        <div className="shape shape-3"></div>
+                        <div className="shape shape-4"></div>
+                        <div className="shape shape-5"></div>
+                    </div>
                 </div>
-            </header>
-
-            <main className="main-content">
-                <section className="features-section">
-                    <h2>Why Choose LocalConnect?</h2>
-                    <div className="features-grid">
-                        <div className="feature-card">
-                            <h3>For Clients</h3>
-                            <p>Browse and book services from verified local providers with ease.</p>
-                            <ul>
-                                <li>Easy service discovery</li>
-                                <li>Secure booking system</li>
-                                <li>Trusted reviews</li>
-                            </ul>
+                
+                <div className="container">
+                    <div className="hero-content">
+                        <div className="hero-badge fade-in-down">
+                            <span>🚀 Your Local Service Marketplace</span>
                         </div>
-                        <div className="feature-card">
-                            <h3>For Service Providers</h3>
-                            <p>Grow your business by connecting with local customers.</p>
-                            <ul>
-                                <li>List your services</li>
-                                <li>Manage bookings</li>
-                                <li>Build your reputation</li>
-                            </ul>
+                        
+                        <h1 className="hero-title fade-in-up">
+                            Welcome to <span className="gradient-text">OneForAll</span>
+                        </h1>
+                        
+                        <p className="hero-subtitle fade-in-up">
+                            Connect with trusted service providers in your community. 
+                            From home repairs to tutoring - find everything you need in one place.
+                        </p>
+                        
+                        <div className="hero-stats fade-in-up">
+                            <div className="stat-item">
+                                <div className="stat-number">500+</div>
+                                <div className="stat-label">Service Providers</div>
+                            </div>
+                            <div className="stat-item">
+                                <div className="stat-number">10K+</div>
+                                <div className="stat-label">Happy Customers</div>
+                            </div>
+                            <div className="stat-item">
+                                <div className="stat-number">50+</div>
+                                <div className="stat-label">Service Categories</div>
+                            </div>
+                        </div>
+                        
+                        {!isAuthenticated && (
+                            <div className="hero-actions fade-in-up">
+                                <Link to="/signup" className="btn btn-primary btn-lg">
+                                    <span>Get Started Free</span>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                        <path d="M5 12h14m-7-7 7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                </Link>
+                                <Link to="/login" className="btn btn-secondary btn-lg">
+                                    Sign In
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </section>
+
+            {/* Features Section */}
+            <section className="features-section">
+                <div className="container">
+                    <div className="section-header text-center">
+                        <h2 className="section-title">Why Choose OneForAll?</h2>
+                        <p className="section-subtitle">
+                            Everything you need to connect with local service providers
+                        </p>
+                    </div>
+                    
+                    <div className="features-grid grid grid-2">
+                        <div className="feature-card card slide-in-right">
+                            <div className="feature-icon">
+                                <div className="icon-wrapper client-icon">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <div className="feature-content">
+                                <h3 className="feature-title">For Clients</h3>
+                                <p className="feature-description">
+                                    Browse and book services from verified local providers with complete confidence.
+                                </p>
+                                
+                                <ul className="feature-list">
+                                    <li>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                            <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        Easy service discovery
+                                    </li>
+                                    <li>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                            <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        Secure booking system
+                                    </li>
+                                    <li>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                            <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        Trusted reviews & ratings
+                                    </li>
+                                    <li>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                            <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        Real-time booking updates
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div className="feature-card card slide-in-right">
+                            <div className="feature-icon">
+                                <div className="icon-wrapper provider-icon">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                                        <path d="m22 11-3-3m0 0-3 3m3-3v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <div className="feature-content">
+                                <h3 className="feature-title">For Service Providers</h3>
+                                <p className="feature-description">
+                                    Grow your business by connecting with local customers who need your services.
+                                </p>
+                                
+                                <ul className="feature-list">
+                                    <li>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                            <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        List unlimited services
+                                    </li>
+                                    <li>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                            <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        Manage bookings efficiently
+                                    </li>
+                                    <li>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                            <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        Build your reputation
+                                    </li>
+                                    <li>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                            <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        Analytics & insights
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                </section>
+                </div>
+            </section>
 
-                <section className="services-preview">
-                    <h2>Available Services</h2>
+            {/* Services Preview Section */}
+            <section className="services-preview">
+                <div className="container">
+                    <div className="section-header text-center">
+                        <h2 className="section-title">Available Services</h2>
+                        <p className="section-subtitle">
+                            Discover amazing services from trusted providers in your area
+                        </p>
+                    </div>
+                    
                     <ServiceList />
-                </section>
-            </main>
+                </div>
+            </section>
 
-            <style jsx>{`
-                .home-page {
-                    min-height: 100vh;
-                }
-
-                .hero-section {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    padding: 4rem 2rem;
-                    text-align: center;
-                }
-
-                .hero-content h1 {
-                    font-size: 3rem;
-                    margin-bottom: 1rem;
-                }
-
-                .hero-content p {
-                    font-size: 1.2rem;
-                    margin-bottom: 1rem;
-                    opacity: 0.9;
-                }
-
-                .hero-actions {
-                    margin-top: 2rem;
-                    display: flex;
-                    gap: 1rem;
-                    justify-content: center;
-                }
-
-                .cta-button {
-                    padding: 1rem 2rem;
-                    border-radius: 6px;
-                    text-decoration: none;
-                    font-weight: 600;
-                    transition: all 0.3s;
-                }
-
-                .cta-button.primary {
-                    background: #48bb78;
-                    color: white;
-                }
-
-                .cta-button.primary:hover {
-                    background: #38a169;
-                    transform: translateY(-2px);
-                }
-
-                .cta-button.secondary {
-                    background: transparent;
-                    color: white;
-                    border: 2px solid white;
-                }
-
-                .cta-button.secondary:hover {
-                    background: white;
-                    color: #667eea;
-                }
-
-                .main-content {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    padding: 3rem 2rem;
-                }
-
-                .features-section {
-                    margin-bottom: 4rem;
-                }
-
-                .features-section h2 {
-                    text-align: center;
-                    margin-bottom: 2rem;
-                    font-size: 2rem;
-                    color: #2d3748;
-                }
-
-                .features-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                    gap: 2rem;
-                    margin-top: 2rem;
-                }
-
-                .feature-card {
-                    background: white;
-                    padding: 2rem;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                    border: 1px solid #e2e8f0;
-                }
-
-                .feature-card h3 {
-                    color: #4299e1;
-                    margin-bottom: 1rem;
-                    font-size: 1.5rem;
-                }
-
-                .feature-card p {
-                    color: #666;
-                    margin-bottom: 1rem;
-                    line-height: 1.6;
-                }
-
-                .feature-card ul {
-                    list-style: none;
-                    padding: 0;
-                }
-
-                .feature-card li {
-                    color: #4a5568;
-                    margin-bottom: 0.5rem;
-                    position: relative;
-                    padding-left: 1.5rem;
-                }
-
-                .feature-card li:before {
-                    content: "✓";
-                    position: absolute;
-                    left: 0;
-                    color: #48bb78;
-                    font-weight: bold;
-                }
-
-                .services-preview {
-                    margin-top: 3rem;
-                }
-
-                .services-preview h2 {
-                    text-align: center;
-                    margin-bottom: 2rem;
-                    font-size: 2rem;
-                    color: #2d3748;
-                }
-
-                @media (max-width: 768px) {
-                    .hero-content h1 {
-                        font-size: 2rem;
-                    }
-
-                    .hero-actions {
-                        flex-direction: column;
-                        align-items: center;
-                    }
-
-                    .cta-button {
-                        width: 200px;
-                    }
-
-                    .main-content {
-                        padding: 2rem 1rem;
-                    }
-
-                    .features-grid {
-                        grid-template-columns: 1fr;
-                    }
-                }
-            `}</style>
+            {/* CTA Section */}
+            <section className="cta-section">
+                <div className="container">
+                    <div className="cta-content" ref={ctaRef}>
+                        <h2 className="cta-title">Ready to Transform Your Service Experience?</h2>
+                        <p className="cta-subtitle">
+                            Join thousands of satisfied customers and service providers building the future of local services
+                        </p>
+                        
+                        {!isAuthenticated && (
+                            <div className="cta-actions">
+                                <Link to="/signup" className="btn btn-primary btn-lg">
+                                    <span>Start Your Journey</span>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                        <path d="M5 12h14m-7-7 7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                </Link>
+                                <Link to="/browse-services" className="btn btn-secondary btn-lg">
+                                    Explore Services
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </section>
         </div>
     );
 };

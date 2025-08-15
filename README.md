@@ -1,13 +1,13 @@
-# LocalConnect – Community Services Directory
+# OneForAll – Community Services Directory
 
 ## Overview
-LocalConnect is a web application that allows local service providers such as plumbers, electricians, and tutors to list their services. Users can browse these listings and book services directly through the platform.
+OneForAll is a web application that allows local service providers such as plumbers, electricians, and tutors to list their services. Users can browse these listings and book services directly through the platform.
 
 ## Project Structure
 The project is divided into two main parts: the backend and the frontend.
 
 ```
-localconnect-community-services-directory
+oneforall-community-services-directory
 ├── backend
 │   ├── controllers
 │   │   └── serviceController.js

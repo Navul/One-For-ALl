@@ -1,14 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isScrolled, setIsScrolled] = useState(false);
-    const { isAuthenticated, user, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+    const { isAuthenticated, user, logout } = useAuth();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -19,10 +18,13 @@ const Navbar = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const handleLogout = () => {
-        logout();
-        navigate('/');
-        setIsMenuOpen(false);
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/');
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
     };
 
     const toggleMenu = () => {
@@ -34,17 +36,14 @@ const Navbar = () => {
     };
 
     const getDashboardLink = () => {
-        if (!user) return '/';
-        
-        switch (user.role) {
-            case 'admin':
-                return '/admin-dashboard';
-            case 'provider':
-                return '/provider-dashboard';
-            case 'user':
-            default:
-                return '/user-dashboard';
+        if (user?.role === 'provider') {
+            return '/provider/dashboard';
+        } else if (user?.role === 'customer') {
+            return '/customer/dashboard';
+        } else if (user?.role === 'admin') {
+            return '/admin/dashboard';
         }
+        return '/dashboard';
     };
 
     return (
@@ -107,7 +106,7 @@ const Navbar = () => {
                                     </Link>
                                     <Link to="/contact" className="btn btn-contact">
                                         <span className="contact-icon">📞</span>
-                                        Contact Us
+                                        Contact
                                     </Link>
                                 </div>
                             )}
@@ -124,7 +123,6 @@ const Navbar = () => {
                     </button>
                 </div>
 
-                {/* Mobile Menu */}
                 <div className={`mobile-menu ${isMenuOpen ? 'active' : ''}`}>
                     <div className="mobile-menu-content">
                         <Link 
@@ -176,6 +174,13 @@ const Navbar = () => {
                                         onClick={closeMenu}
                                     >
                                         Sign Up
+                                    </Link>
+                                    <Link 
+                                        to="/contact" 
+                                        className="mobile-btn mobile-btn-contact"
+                                        onClick={closeMenu}
+                                    >
+                                        Contact
                                     </Link>
                                 </div>
                             )}
@@ -490,6 +495,17 @@ const Navbar = () => {
                 }
 
                 .mobile-btn-primary:hover {
+                    background: #91c7f7;
+                    border-color: #91c7f7;
+                }
+
+                .mobile-btn-contact {
+                    background: #a5d8ff;
+                    color: #1e3a8a;
+                    border: 2px solid #a5d8ff;
+                }
+
+                .mobile-btn-contact:hover {
                     background: #91c7f7;
                     border-color: #91c7f7;
                 }
