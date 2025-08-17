@@ -13,6 +13,29 @@ const serviceSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    category: {
+        type: String,
+        required: true,
+        enum: [
+            'cleaning', 
+            'plumbing', 
+            'electrical', 
+            'painting', 
+            'gardening', 
+            'moving', 
+            'handyman', 
+            'automotive', 
+            'tutoring', 
+            'fitness', 
+            'beauty', 
+            'pet-care', 
+            'appliance-repair',
+            'carpentry',
+            'roofing',
+            'others'
+        ],
+        default: 'others'
+    },
     provider: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

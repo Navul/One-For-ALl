@@ -6,6 +6,8 @@ const router = express.Router();
 
 function setRoutes(app) {
     router.get('/services', ServiceController.getAllServices);
+    router.get('/services/categories', ServiceController.getCategories);
+    router.get('/services/category/:category', ServiceController.getServicesByCategory);
     router.post('/services', protect, ServiceController.createService);
     router.get('/services/my-services', protect, ServiceController.getMyServices);
     router.post('/services/:id/book', protect, ServiceController.bookService);

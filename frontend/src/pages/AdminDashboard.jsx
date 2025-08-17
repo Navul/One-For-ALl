@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const AdminDashboard = () => {
@@ -13,11 +13,7 @@ const AdminDashboard = () => {
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchAdminData();
-    }, []);
-
-    const fetchAdminData = async () => {
+    const fetchAdminData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             
@@ -58,7 +54,11 @@ const AdminDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [stats]);
+
+    useEffect(() => {
+        fetchAdminData();
+    }, [fetchAdminData]);
 
     const handleLogout = () => {
         logout();
@@ -88,7 +88,7 @@ const AdminDashboard = () => {
     }
 
     return (
-        <div className="dashboard">
+        <div className="dashboard page-container">
             <header className="dashboard-header">
                 <div className="header-content">
                     <div>
@@ -222,12 +222,16 @@ const AdminDashboard = () => {
                 .dashboard {
                     min-height: 100vh;
                     background-color: #f7fafc;
+                    padding-top: 80px;
                 }
 
                 .dashboard-header {
-                    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+                    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1d4ed8 100%);
                     color: white;
                     padding: 2rem 0;
+                    margin-top: -1px;
+                    position: relative;
+                    z-index: 10;
                 }
 
                 .header-content {

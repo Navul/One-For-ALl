@@ -73,7 +73,13 @@ const Navbar = () => {
                             {isAuthenticated && (
                                 <Link 
                                     to={getDashboardLink()} 
-                                    className={`nav-link ${location.pathname.includes('dashboard') ? 'active' : ''}`}
+                                    className={`nav-link ${
+                                        location.pathname.includes('dashboard') || 
+                                        location.pathname.includes('/admin-dashboard') ||
+                                        location.pathname.includes('/provider-dashboard') ||
+                                        location.pathname.includes('/user-dashboard') 
+                                        ? 'active' : ''
+                                    }`}
                                 >
                                     Dashboard
                                 </Link>
@@ -144,7 +150,13 @@ const Navbar = () => {
                         {isAuthenticated && (
                             <Link 
                                 to={getDashboardLink()} 
-                                className={`mobile-nav-link ${location.pathname.includes('dashboard') ? 'active' : ''}`}
+                                className={`mobile-nav-link ${
+                                    location.pathname.includes('dashboard') || 
+                                    location.pathname.includes('/admin-dashboard') ||
+                                    location.pathname.includes('/provider-dashboard') ||
+                                    location.pathname.includes('/user-dashboard') 
+                                    ? 'active' : ''
+                                }`}
                                 onClick={closeMenu}
                             >
                                 Dashboard
@@ -191,13 +203,13 @@ const Navbar = () => {
 
             <style jsx>{`
                 .navbar {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    z-index: 1000;
-                    background: #1e3a8a;
-                    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    z-index: 1000 !important;
+                    background: #1e3a8a !important;
+                    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
                     backdrop-filter: blur(20px);
                     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                     transition: all 0.3s ease;
@@ -205,8 +217,8 @@ const Navbar = () => {
                 }
 
                 .navbar.scrolled {
-                    background: #1e3a8a;
-                    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+                    background: #1e3a8a !important;
+                    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
                     box-shadow: 0 8px 32px rgba(30, 58, 138, 0.4);
                 }
 
@@ -223,7 +235,7 @@ const Navbar = () => {
                     text-decoration: none;
                     font-size: 1.75rem;
                     font-weight: 800;
-                    color: white;
+                    color: white !important;
                     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
                 }
 
@@ -241,7 +253,7 @@ const Navbar = () => {
 
                 .nav-link {
                     text-decoration: none;
-                    color: white;
+                    color: white !important;
                     font-weight: 500;
                     padding: 0.5rem 1rem;
                     border-radius: 8px;
@@ -250,13 +262,13 @@ const Navbar = () => {
                 }
 
                 .nav-link:hover {
-                    color: #a5d8ff;
+                    color: #a5d8ff !important;
                     background: rgba(255, 255, 255, 0.1);
                     transform: translateY(-1px);
                 }
 
                 .nav-link.active {
-                    color: #a5d8ff;
+                    color: #a5d8ff !important;
                     background: rgba(255, 255, 255, 0.15);
                 }
 
@@ -293,7 +305,7 @@ const Navbar = () => {
 
                 .user-name {
                     font-weight: 500;
-                    color: white;
+                    color: white !important;
                 }
 
                 .logout-btn {
@@ -410,8 +422,8 @@ const Navbar = () => {
                     top: 100%;
                     left: 0;
                     right: 0;
-                    background: #1e3a8a;
-                    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+                    background: #1e3a8a !important;
+                    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
                     box-shadow: 0 8px 32px rgba(30, 58, 138, 0.3);
                     border-top: 1px solid rgba(255, 255, 255, 0.1);
                 }
@@ -427,7 +439,7 @@ const Navbar = () => {
                 .mobile-nav-link {
                     display: block;
                     text-decoration: none;
-                    color: white;
+                    color: white !important;
                     font-weight: 500;
                     padding: 1rem 0;
                     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -436,7 +448,7 @@ const Navbar = () => {
 
                 .mobile-nav-link:hover,
                 .mobile-nav-link.active {
-                    color: #a5d8ff;
+                    color: #a5d8ff !important;
                 }
 
                 .mobile-auth {

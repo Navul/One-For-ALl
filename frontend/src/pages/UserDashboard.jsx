@@ -45,7 +45,7 @@ const UserDashboard = () => {
     }
 
     return (
-        <div className="dashboard">
+        <div className="dashboard page-container">
             <header className="dashboard-header">
                 <div className="header-content">
                     <h1>Welcome, {user?.name}!</h1>
@@ -100,12 +100,16 @@ const UserDashboard = () => {
                 .dashboard {
                     min-height: 100vh;
                     background-color: #f7fafc;
+                    padding-top: 80px;
                 }
 
                 .dashboard-header {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1d4ed8 100%);
                     color: white;
                     padding: 2rem 0;
+                    margin-top: -1px;
+                    position: relative;
+                    z-index: 10;
                 }
 
                 .header-content {

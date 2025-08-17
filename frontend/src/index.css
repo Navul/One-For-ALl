@@ -83,6 +83,18 @@ html {
   overflow-x: hidden;
 }
 
+/* Global page spacing for fixed navbar */
+.page-container {
+  padding-top: 5rem; /* Space for fixed navbar */
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+/* Ensure body has solid background */
+body {
+  background: #f8fafc !important;
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;

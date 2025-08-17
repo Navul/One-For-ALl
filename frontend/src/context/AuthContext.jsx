@@ -74,15 +74,6 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [state, dispatch] = useReducer(authReducer, initialState);
 
-    // Set auth token in headers
-    const setAuthToken = (token) => {
-        if (token) {
-            localStorage.setItem('token', token);
-        } else {
-            localStorage.removeItem('token');
-        }
-    };
-
     // Load user
     const loadUser = async () => {
         const token = localStorage.getItem('token');

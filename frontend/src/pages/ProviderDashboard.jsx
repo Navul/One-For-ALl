@@ -5,8 +5,28 @@ function AddServiceForm({ onServiceAdded, onClose }) {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
+    const [category, setCategory] = useState('cleaning');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const categories = [
+        { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
+        { id: 'plumbing', name: 'Plumbing', icon: '🔧' },
+        { id: 'electrical', name: 'Electrical', icon: '⚡' },
+        { id: 'painting', name: 'Painting', icon: '🎨' },
+        { id: 'gardening', name: 'Gardening', icon: '🌱' },
+        { id: 'moving', name: 'Moving', icon: '📦' },
+        { id: 'handyman', name: 'Handyman', icon: '🔨' },
+        { id: 'automotive', name: 'Automotive', icon: '🚗' },
+        { id: 'tutoring', name: 'Tutoring', icon: '📚' },
+        { id: 'fitness', name: 'Fitness', icon: '💪' },
+        { id: 'beauty', name: 'Beauty & Wellness', icon: '💄' },
+        { id: 'pet-care', name: 'Pet Care', icon: '🐕' },
+        { id: 'appliance-repair', name: 'Appliance Repair', icon: '🔧' },
+        { id: 'carpentry', name: 'Carpentry', icon: '🪚' },
+        { id: 'roofing', name: 'Roofing', icon: '🏠' },
+        { id: 'others', name: 'Others', icon: '⭐' }
+    ];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -15,7 +35,7 @@ function AddServiceForm({ onServiceAdded, onClose }) {
         try {
             const token = localStorage.getItem('token');
             console.log('Token:', token); // Debug token
-            console.log('Sending data:', { title, description, price }); // Debug data
+            console.log('Sending data:', { title, description, price, category }); // Debug data
             
             const res = await fetch('http://localhost:5000/api/services', {
                 method: 'POST',
@@ -23,7 +43,7 @@ function AddServiceForm({ onServiceAdded, onClose }) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ title, description, price })
+                body: JSON.stringify({ title, description, price, category })
             });
             
             const data = await res.json();
@@ -36,6 +56,7 @@ function AddServiceForm({ onServiceAdded, onClose }) {
             setTitle(''); 
             setDescription(''); 
             setPrice('');
+            setCategory('cleaning');
             onServiceAdded && onServiceAdded();
             onClose && onClose();
         } catch (err) {
@@ -50,11 +71,60 @@ function AddServiceForm({ onServiceAdded, onClose }) {
         <div className="add-service-form">
             <h3>Add New Service</h3>
             <form onSubmit={handleSubmit}>
-                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Service Name" className="form-input" required />
-                <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" className="form-textarea" required></textarea>
-                <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="Price" className="form-input" min="0" required />
+                <input 
+                    type="text" 
+                    value={title} 
+                    onChange={e => setTitle(e.target.value)} 
+                    placeholder="Service Name" 
+                    className="form-input" 
+                    required 
+                />
+                <textarea 
+                    value={description} 
+                    onChange={e => setDescription(e.target.value)} 
+                    placeholder="Description" 
+                    className="form-textarea" 
+                    required
+                />
+                <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#374151' }}>
+                        Category
+                    </label>
+                    <select 
+                        value={category} 
+                        onChange={e => setCategory(e.target.value)} 
+                        className="form-input"
+                        required
+                        style={{ 
+                            width: '100%',
+                            padding: '0.75rem',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            fontSize: '0.95rem',
+                            backgroundColor: 'white'
+                        }}
+                    >
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>
+                                {cat.icon} {cat.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <input 
+                    type="number" 
+                    value={price} 
+                    onChange={e => setPrice(e.target.value)} 
+                    placeholder="Price ($)" 
+                    className="form-input" 
+                    min="0" 
+                    step="0.01"
+                    required 
+                />
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                    <button type="submit" className="submit-btn" disabled={loading}>{loading ? 'Adding...' : 'Add Service'}</button>
+                    <button type="submit" className="submit-btn" disabled={loading}>
+                        {loading ? 'Adding...' : 'Add Service'}
+                    </button>
                     <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
                 </div>
                 {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -113,7 +183,7 @@ const ProviderDashboard = () => {
     }
 
     return (
-        <div className="dashboard">
+        <div className="dashboard page-container">
             <header className="dashboard-header">
                 <div className="header-content">
                     <div>
@@ -162,17 +232,57 @@ const ProviderDashboard = () => {
 
                         {myServices.length > 0 ? (
                             <div className="services-grid">
-                                {myServices.map((service, index) => (
-                                    <div key={service._id || index} className="service-card">
-                                        <h4>{service.title}</h4>
-                                        <p>{service.description}</p>
-                                        <p className="price">${service.price || '0'}</p>
-                                        <div className="service-actions">
-                                            <button className="edit-btn">Edit</button>
-                                            <button className="delete-btn">Delete</button>
+                                {myServices.map((service, index) => {
+                                    const categories = [
+                                        { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
+                                        { id: 'plumbing', name: 'Plumbing', icon: '🔧' },
+                                        { id: 'electrical', name: 'Electrical', icon: '⚡' },
+                                        { id: 'painting', name: 'Painting', icon: '🎨' },
+                                        { id: 'gardening', name: 'Gardening', icon: '🌱' },
+                                        { id: 'moving', name: 'Moving', icon: '📦' },
+                                        { id: 'handyman', name: 'Handyman', icon: '🔨' },
+                                        { id: 'automotive', name: 'Automotive', icon: '🚗' },
+                                        { id: 'tutoring', name: 'Tutoring', icon: '📚' },
+                                        { id: 'fitness', name: 'Fitness', icon: '💪' },
+                                        { id: 'beauty', name: 'Beauty & Wellness', icon: '💄' },
+                                        { id: 'pet-care', name: 'Pet Care', icon: '🐕' },
+                                        { id: 'appliance-repair', name: 'Appliance Repair', icon: '🔧' },
+                                        { id: 'carpentry', name: 'Carpentry', icon: '🪚' },
+                                        { id: 'roofing', name: 'Roofing', icon: '🏠' },
+                                        { id: 'others', name: 'Others', icon: '⭐' }
+                                    ];
+                                    // Handle missing or undefined category by defaulting to 'others'
+                                    const serviceCategory = service.category || 'others';
+                                    const categoryInfo = categories.find(cat => cat.id === serviceCategory) || { name: 'Others', icon: '⚡' };
+                                    
+                                    return (
+                                        <div key={service._id || index} className="service-card">
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                                <h4 style={{ margin: 0, flex: 1 }}>{service.title}</h4>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.25rem',
+                                                    background: '#f3f4f6',
+                                                    padding: '0.25rem 0.75rem',
+                                                    borderRadius: '20px',
+                                                    fontSize: '0.75rem',
+                                                    color: '#6b7280',
+                                                    fontWeight: '500'
+                                                }}>
+                                                    <span style={{ fontSize: '0.9rem' }}>{categoryInfo.icon}</span>
+                                                    {categoryInfo.name}
+                                                </div>
+                                            </div>
+                                            <p style={{ marginBottom: '0.75rem' }}>{service.description}</p>
+                                            <p className="price" style={{ marginBottom: '1rem' }}>${service.price || '0'}</p>
+                                            <div className="service-actions">
+                                                <button className="edit-btn">Edit</button>
+                                                <button className="delete-btn">Delete</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
                             <p className="no-data">No services yet. Add your first service to get started!</p>
@@ -185,12 +295,16 @@ const ProviderDashboard = () => {
                 .dashboard {
                     min-height: 100vh;
                     background-color: #f7fafc;
+                    padding-top: 80px;
                 }
 
                 .dashboard-header {
-                    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+                    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1d4ed8 100%);
                     color: white;
                     padding: 2rem 0;
+                    margin-top: -1px;
+                    position: relative;
+                    z-index: 10;
                 }
 
                 .header-content {
