@@ -100,7 +100,7 @@ const UserDashboard = () => {
                                     <div key={booking._id || index} className="booking-item">
                                         <h4>{booking.service?.title || 'Service'}</h4>
                                         <p>Date: {new Date(booking.date).toLocaleDateString() || 'TBD'}</p>
-                                        <p>Price: ${booking.service?.price || 'N/A'}</p>
+                                        <p>Price: ${booking.finalPrice || booking.totalAmount || booking.service?.price || 'N/A'}</p>
                                         <span className={`status ${booking.status || 'pending'}`}>
                                             {booking.status || 'Pending'}
                                         </span>

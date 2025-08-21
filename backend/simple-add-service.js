@@ -3,7 +3,12 @@ require('dotenv').config();
 
 console.log('Connecting to MongoDB...');
 
-mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://mdnabilkhan:nabil123@cluster0.syc8y.mongodb.net/simple_mflix?retryWrites=true&w=majority&appName=Cluster0')
+if (!process.env.MONGO_URI) {
+    console.error('MONGO_URI not found in environment variables');
+    process.exit(1);
+}
+
+mongoose.connect(process.env.MONGO_URI)
     .then(async () => {
         console.log('Connected successfully!');
         
