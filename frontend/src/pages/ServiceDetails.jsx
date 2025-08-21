@@ -7,7 +7,7 @@ const ServiceDetails = () => {
     const { serviceId } = useParams();
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true); // eslint-disable-line no-unused-vars
 
     // Sample services with prices (you can fetch from API later)
     const sampleServices = [

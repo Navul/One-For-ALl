@@ -7,7 +7,7 @@ import {
     cancelNegotiation,
     deleteNegotiation 
 } from '../services/negotiationService';
-import { createBookingFromNegotiation, createBooking } from '../services/bookingService';
+import { createBookingFromNegotiation, createBooking } from '../services/bookingService'; // eslint-disable-line no-unused-vars
 import useRealtimeNegotiations from '../hooks/useRealtimeNegotiations';
 
 const NegotiationsDashboard = () => {

@@ -204,9 +204,16 @@ exports.createBooking = async (req, res) => {
 // Get bookings for a user
 exports.getUserBookings = async (req, res) => {
     try {
-        const bookings = await Booking.find({ user: req.user._id }).populate('service');
+        console.log('📚 Getting bookings for user:', req.user._id);
+        const bookings = await Booking.find({ user: req.user._id })
+            .populate('service')
+            .populate('provider', 'name email')
+            .sort({ createdAt: -1 }); // Sort by newest first
+            
+        console.log('✅ Found', bookings.length, 'bookings for user');
         res.json({ success: true, bookings });
     } catch (error) {
+        console.error('❌ Error fetching user bookings:', error);
         res.status(500).json({ success: false, message: 'Error fetching bookings', error: error.message });
     }
 };
@@ -290,3 +297,124 @@ exports.createBookingFromNegotiation = async (req, res) => {
     });
 };
 */
+
+// Update booking status
+exports.updateBookingStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const userId = req.user._id;
+
+        console.log('📝 Updating booking status:', { id, status, userId });
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid booking ID format' });
+        }
+
+        const validStatuses = ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled', 'bargaining', 'negotiating', 'counter_offered'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Invalid status. Valid statuses are: ${validStatuses.join(', ')}` 
+            });
+        }
+
+        const booking = await Booking.findById(id);
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        // Check if user has permission to update this booking
+        const isBookingOwner = booking.user.toString() === userId.toString();
+        const isServiceProvider = booking.provider.toString() === userId.toString();
+        
+        if (!isBookingOwner && !isServiceProvider) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'You can only update your own bookings or bookings for your services' 
+            });
+        }
+
+        // Update the booking status
+        booking.status = status;
+        
+        // If marking as completed, set completion time
+        if (status === 'completed') {
+            booking.completionTime = new Date();
+        }
+
+        await booking.save();
+
+        console.log('✅ Booking status updated successfully');
+        res.json({ success: true, message: 'Booking status updated successfully', booking });
+    } catch (error) {
+        console.error('❌ Error updating booking status:', error);
+        res.status(500).json({ success: false, message: 'Server error while updating booking status' });
+    }
+};
+
+// Rate a booking
+exports.rateBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rating } = req.body;
+        const userId = req.user._id;
+
+        console.log('⭐ Rating booking:', { id, rating, userId });
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid booking ID format' });
+        }
+
+        if (!rating || !rating.score || rating.score < 1 || rating.score > 5) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Rating score is required and must be between 1 and 5' 
+            });
+        }
+
+        const booking = await Booking.findById(id);
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        // Check if user is the booking owner (customer who can rate)
+        if (booking.user.toString() !== userId.toString()) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'You can only rate your own bookings' 
+            });
+        }
+
+        // Check if booking is completed
+        if (booking.status !== 'completed') {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'You can only rate completed bookings' 
+            });
+        }
+
+        // Check if already rated
+        if (booking.rating && booking.rating.score) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'This booking has already been rated' 
+            });
+        }
+
+        // Add the rating
+        booking.rating = {
+            score: rating.score,
+            review: rating.review || '',
+            createdAt: new Date()
+        };
+
+        await booking.save();
+
+        console.log('✅ Booking rated successfully');
+        res.json({ success: true, message: 'Rating submitted successfully', booking });
+    } catch (error) {
+        console.error('❌ Error rating booking:', error);
+        res.status(500).json({ success: false, message: 'Server error while rating booking' });
+    }
+};

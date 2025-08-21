@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import notificationService from '../services/notificationService';
 
 const Notifications = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // eslint-disable-line no-unused-vars
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, unread, read

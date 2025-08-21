@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import notificationService from '../services/notificationService';
+import notificationService from '../services/notificationService'; // eslint-disable-line no-unused-vars
 import { useAuth } from '../context/AuthContext';
 
 const NotificationTest = () => {

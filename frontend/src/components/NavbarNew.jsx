@@ -75,6 +75,16 @@ const Navbar = () => {
                                 </Link>
                             )}
 
+                            {/* Show My Bookings link for customers/users */}
+                            {isAuthenticated && (user?.role === 'customer' || user?.role === 'user') && (
+                                <Link 
+                                    to="/my-bookings" 
+                                    className={`nav-link ${location.pathname === '/my-bookings' ? 'active' : ''}`}
+                                >
+                                    My Bookings
+                                </Link>
+                            )}
+
                             {/* Show My Services link for providers */}
                             {isAuthenticated && user?.role === 'provider' && (
                                 <Link 
@@ -194,6 +204,17 @@ const Navbar = () => {
                                 onClick={closeMenu}
                             >
                                 Services
+                            </Link>
+                        )}
+
+                        {/* Show My Bookings link for customers/users */}
+                        {isAuthenticated && (user?.role === 'customer' || user?.role === 'user') && (
+                            <Link 
+                                to="/my-bookings" 
+                                className={`mobile-nav-link ${location.pathname === '/my-bookings' ? 'active' : ''}`}
+                                onClick={closeMenu}
+                            >
+                                My Bookings
                             </Link>
                         )}
 

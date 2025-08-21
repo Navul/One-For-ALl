@@ -8,6 +8,7 @@ import ServiceDetails from './pages/ServiceDetails';
 import NegotiationsDashboard from './pages/NegotiationsDashboard';
 import Notifications from './pages/Notifications';
 import NotificationTest from './pages/NotificationTest';
+import MyBookings from './pages/MyBookings';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import UserDashboard from './pages/UserDashboard';
@@ -67,6 +68,16 @@ const App = () => {
                         element={
                             <ProtectedRoute allowedRoles={['user', 'provider', 'admin']}>
                                 <NotificationTest />
+                            </ProtectedRoute>
+                        }
+                    />
+                    
+                    {/* My Bookings route */}
+                    <Route 
+                        path="/my-bookings" 
+                        element={
+                            <ProtectedRoute allowedRoles={['user', 'provider', 'admin']}>
+                                <MyBookings />
                             </ProtectedRoute>
                         }
                     />

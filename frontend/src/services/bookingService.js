@@ -118,7 +118,7 @@ export const getUserBookings = async () => {
             throw new Error('Authentication required');
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/bookings`, {
+        const response = await fetch(`${API_BASE_URL}/api/bookings/user`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -163,6 +163,68 @@ export const updateBookingStatus = async (bookingId, status) => {
         return await response.json();
     } catch (error) {
         console.error('Error updating booking status:', error);
+        throw error;
+    }
+};
+
+// Rate a completed service
+export const rateService = async (bookingId, rating, review = '') => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('Authentication required');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}/rate`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                rating: {
+                    score: rating,
+                    review,
+                    createdAt: new Date()
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Failed to rate service');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error rating service:', error);
+        throw error;
+    }
+};
+
+// Get booking details by ID
+export const getBookingById = async (bookingId) => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('Authentication required');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Failed to fetch booking details');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching booking details:', error);
         throw error;
     }
 };

@@ -92,7 +92,7 @@ const NotificationBell = ({ onUnreadCountChange }) => {
     }
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = (priority) => { // eslint-disable-line no-unused-vars
     switch (priority) {
       case 'high': return '#ef4444';
       case 'medium': return '#f59e0b';

@@ -78,8 +78,11 @@ const UserDashboard = () => {
                                 <p className="stat-number">{services.length}</p>
                             </div>
                             <div className="stat-card">
-                                <h3>My Bookings</h3>
-                                <p className="stat-number">{bookings.length}</p>
+                                <Link to="/my-bookings" style={{ textDecoration: 'none', color: 'inherit' }}>
+                                    <h3>My Bookings</h3>
+                                    <p className="stat-number">{bookings.length}</p>
+                                    <p className="stat-subtitle">View all bookings</p>
+                                </Link>
                             </div>
                             <div className="stat-card">
                                 <Link to="/negotiations" style={{ textDecoration: 'none', color: 'inherit' }}>
