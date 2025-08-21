@@ -31,7 +31,19 @@ class ServiceController {
             if (!req.user || req.user.role !== 'provider') {
                 return res.status(403).json({ message: 'Only providers can create services.' });
             }
-            const { title, description, price, category } = req.body;
+            const { 
+                title, 
+                description, 
+                price, 
+                category, 
+                instantService, 
+                estimatedDuration, 
+                serviceRadius,
+                latitude,
+                longitude,
+                address 
+            } = req.body;
+            
             if (!title || !description || !price || !category) {
                 return res.status(400).json({ message: 'All fields including category are required.' });
             }
@@ -53,7 +65,20 @@ class ServiceController {
                 category,
                 provider: req.user._id,
                 availability: req.body.availability !== undefined ? req.body.availability : true,
+                instantService: instantService || false,
+                estimatedDuration: estimatedDuration || 60,
+                serviceRadius: serviceRadius || 5
             });
+
+            // Add location if provided
+            if (latitude && longitude) {
+                service.location = {
+                    type: 'Point',
+                    coordinates: [parseFloat(longitude), parseFloat(latitude)],
+                    address: address || ''
+                };
+            }
+            
             const savedService = await service.save();
             res.status(201).json(savedService);
         } catch (error) {
@@ -63,13 +88,76 @@ class ServiceController {
 
     async getMyServices(req, res) {
         try {
-            const services = await Service.find({ provider: req.user._id });
+            // Only return active services (availability: true) for the authenticated provider
+            const services = await Service.find({ 
+                provider: req.user._id,
+                availability: true 
+            }).populate('provider', 'name email');
+            
             res.status(200).json({
                 success: true,
-                data: services
+                data: services,
+                count: services.length
             });
         } catch (error) {
             console.error('Error fetching my services:', error);
+            res.status(500).json({ 
+                success: false,
+                message: error.message 
+            });
+        }
+    }
+
+    async toggleServiceAvailability(req, res) {
+        try {
+            const serviceId = req.params.id;
+            const userId = req.user._id;
+
+            // Find the service and ensure it belongs to the authenticated provider
+            const service = await Service.findOne({ 
+                _id: serviceId, 
+                provider: userId 
+            });
+
+            if (!service) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Service not found or you do not have permission to modify it'
+                });
+            }
+
+            // Toggle availability
+            service.availability = !service.availability;
+            await service.save();
+
+            res.status(200).json({
+                success: true,
+                message: `Service ${service.availability ? 'activated' : 'deactivated'} successfully`,
+                data: service
+            });
+        } catch (error) {
+            console.error('Error toggling service availability:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
+
+    async getAllMyServices(req, res) {
+        try {
+            // Return all services (both active and inactive) for provider management
+            const services = await Service.find({ 
+                provider: req.user._id 
+            }).populate('provider', 'name email');
+            
+            res.status(200).json({
+                success: true,
+                data: services,
+                count: services.length
+            });
+        } catch (error) {
+            console.error('Error fetching all my services:', error);
             res.status(500).json({ 
                 success: false,
                 message: error.message 
@@ -132,6 +220,83 @@ class ServiceController {
                 category: category,
                 count: services.length,
                 data: services
+            });
+        } catch (error) {
+            res.status(500).json({ 
+                success: false,
+                message: error.message 
+            });
+        }
+    }
+
+    async updateService(req, res) {
+        try {
+            const { id } = req.params;
+            const { title, description, category, startingPrice, address } = req.body;
+
+            // Find the service and check if user owns it
+            const service = await Service.findById(id);
+            if (!service) {
+                return res.status(404).json({ message: 'Service not found' });
+            }
+
+            // Check if the current user is the owner
+            if (service.provider.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ message: 'You can only update your own services' });
+            }
+
+            // Calculate min and max prices (30% range)
+            const minPrice = Math.floor(startingPrice * 0.7);
+            const maxPrice = Math.ceil(startingPrice * 1.3);
+
+            // Update the service
+            const updatedService = await Service.findByIdAndUpdate(
+                id,
+                {
+                    title,
+                    description,
+                    category,
+                    startingPrice,
+                    minPrice,
+                    maxPrice,
+                    address
+                },
+                { new: true }
+            ).populate('provider', 'name email');
+
+            res.status(200).json({
+                success: true,
+                message: 'Service updated successfully',
+                data: updatedService
+            });
+        } catch (error) {
+            res.status(500).json({ 
+                success: false,
+                message: error.message 
+            });
+        }
+    }
+
+    async deleteService(req, res) {
+        try {
+            const { id } = req.params;
+
+            // Find the service and check if user owns it
+            const service = await Service.findById(id);
+            if (!service) {
+                return res.status(404).json({ message: 'Service not found' });
+            }
+
+            // Check if the current user is the owner
+            if (service.provider.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ message: 'You can only delete your own services' });
+            }
+
+            await Service.findByIdAndDelete(id);
+
+            res.status(200).json({
+                success: true,
+                message: 'Service deleted successfully'
             });
         } catch (error) {
             res.status(500).json({ 

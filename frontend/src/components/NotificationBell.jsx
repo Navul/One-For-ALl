@@ -1,0 +1,277 @@
+import React, { useState, useEffect } from 'react';
+import notificationService from '../services/notificationService';
+
+const NotificationBell = ({ onUnreadCountChange }) => {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (onUnreadCountChange) {
+      onUnreadCountChange(unreadCount);
+    }
+  }, [unreadCount, onUnreadCountChange]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await notificationService.getUnreadCount();
+      setUnreadCount(response.unreadCount);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const response = await notificationService.getUserNotifications();
+      setNotifications(response.notifications);
+      setUnreadCount(response.pagination.unreadCount);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBellClick = () => {
+    setShowNotifications(!showNotifications);
+    if (!showNotifications) {
+      fetchNotifications();
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification.isRead) {
+      try {
+        await notificationService.markAsRead(notification._id);
+        setNotifications(prev =>
+          prev.map(n =>
+            n._id === notification._id ? { ...n, isRead: true } : n
+          )
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'NEGOTIATION_STARTED': return '🤝';
+      case 'COUNTER_OFFER_RECEIVED': return '💰';
+      case 'OFFER_ACCEPTED': return '✅';
+      case 'OFFER_DECLINED': return '❌';
+      case 'NEGOTIATION_EXPIRED': return '⏰';
+      case 'BOOKING_CREATED': return '📅';
+      case 'SERVICE_BOOKED': return '🎯';
+      default: return '🔔';
+    }
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now - past;
+    
+    if (diffMs < 60000) return 'Just now';
+    if (diffMs < 3600000) return `${Math.floor(diffMs / 60000)}m ago`;
+    if (diffMs < 86400000) return `${Math.floor(diffMs / 3600000)}h ago`;
+    return `${Math.floor(diffMs / 86400000)}d ago`;
+  };
+
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      {/* Notification Bell */}
+      <button
+        onClick={handleBellClick}
+        style={{
+          background: 'none',
+          border: 'none',
+          fontSize: '1.5rem',
+          cursor: 'pointer',
+          position: 'relative',
+          color: '#374151'
+        }}
+        title="Notifications"
+      >
+        🔔
+        {unreadCount > 0 && (
+          <span
+            style={{
+              position: 'absolute',
+              top: '-5px',
+              right: '-5px',
+              background: '#ef4444',
+              color: 'white',
+              borderRadius: '50%',
+              width: '20px',
+              height: '20px',
+              fontSize: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold'
+            }}
+          >
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {/* Notification Dropdown */}
+      {showNotifications && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            width: '400px',
+            maxHeight: '500px',
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+            zIndex: 1000,
+            overflowY: 'auto'
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: '1rem',
+              borderBottom: '1px solid #e5e7eb',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: '#f9fafb'
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>
+              Notifications
+            </h3>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#3b82f6',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                Mark all as read
+              </button>
+            )}
+          </div>
+
+          {/* Notifications List */}
+          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            {loading ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                Loading notifications...
+              </div>
+            ) : notifications.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                No notifications yet
+              </div>
+            ) : (
+              notifications.map((notification) => (
+                <div
+                  key={notification._id}
+                  onClick={() => handleNotificationClick(notification)}
+                  style={{
+                    padding: '1rem',
+                    borderBottom: '1px solid #f3f4f6',
+                    cursor: 'pointer',
+                    background: notification.isRead ? 'white' : '#eff6ff',
+                    transition: 'background-color 0.2s ease'
+                  }}
+                  onMouseEnter={e => {
+                    if (notification.isRead) {
+                      e.target.style.background = '#f9fafb';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    e.target.style.background = notification.isRead ? 'white' : '#eff6ff';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>
+                      {getNotificationIcon(notification.type)}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{
+                        margin: '0 0 0.25rem 0',
+                        fontWeight: notification.isRead ? '500' : '600',
+                        fontSize: '0.95rem',
+                        color: '#111827'
+                      }}>
+                        {notification.title}
+                      </p>
+                      <p style={{
+                        margin: '0 0 0.5rem 0',
+                        fontSize: '0.85rem',
+                        color: '#6b7280',
+                        lineHeight: '1.4'
+                      }}>
+                        {notification.message}
+                      </p>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          color: '#9ca3af'
+                        }}>
+                          {formatTimeAgo(notification.createdAt)}
+                        </span>
+                        {notification.data?.offerAmount && (
+                          <span style={{
+                            background: '#dcfce7',
+                            color: '#166534',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600'
+                          }}>
+                            ${notification.data.offerAmount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default NotificationBell;

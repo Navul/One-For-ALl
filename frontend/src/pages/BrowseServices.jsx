@@ -1,4 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import locationService from '../services/locationService';
+import GoogleMap from '../components/GoogleMap';
+import LocationPermission from '../components/LocationPermission';
+import ServiceCardWithBargain from '../components/ServiceCardWithBargain';
 
 const BrowseServices = () => {
   const [services, setServices] = useState([]);
@@ -10,6 +14,10 @@ const BrowseServices = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [userLocation, setUserLocation] = useState(null);
+  const [showMap, setShowMap] = useState(false);
+  const [sortBy, setSortBy] = useState('relevance'); // relevance, distance, price, rating
+  const [showInstantOnly, setShowInstantOnly] = useState(false);
 
   // Fetch categories
   useEffect(() => {
@@ -32,34 +40,65 @@ const BrowseServices = () => {
       setLoading(true);
       setError('');
       try {
-        let url = '/api/services';
-        const params = new URLSearchParams();
+        let services;
         
-        if (selectedCategory !== 'all') {
-          params.append('category', selectedCategory);
+        if (userLocation && (showInstantOnly || sortBy === 'distance')) {
+          // Use location-based API for nearby/instant services
+          const options = {
+            radius: 25,
+            instantOnly: showInstantOnly
+          };
+          
+          if (selectedCategory !== 'all') {
+            options.category = selectedCategory;
+          }
+          
+          const response = await locationService.getNearbyServices(
+            userLocation.lat,
+            userLocation.lng,
+            options
+          );
+          services = response.services || [];
+        } else {
+          // Use regular API
+          let url = '/api/services';
+          const params = new URLSearchParams();
+          
+          if (selectedCategory !== 'all') {
+            params.append('category', selectedCategory);
+          }
+          
+          if (search.trim()) {
+            params.append('search', search.trim());
+          }
+          
+          if (params.toString()) {
+            url += '?' + params.toString();
+          }
+          
+          const res = await fetch(url);
+          
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'Failed to fetch services');
+          }
+          
+          services = await res.json();
         }
         
-        if (search.trim()) {
-          params.append('search', search.trim());
-        }
-        
-        if (params.toString()) {
-          url += '?' + params.toString();
-        }
-        
-        const res = await fetch(url);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Failed to fetch services');
-        setServices(data);
-        setFilteredServices(data);
+        setServices(services);
+        setFilteredServices(services);
       } catch (err) {
-        setError(err.message);
+        console.error('Error fetching services:', err);
+        setError(err.message || 'Something went wrong while fetching services');
+        setServices([]);
       } finally {
         setLoading(false);
       }
     };
+
     fetchServices();
-  }, [selectedCategory, search]);
+  }, [selectedCategory, search, userLocation, showInstantOnly, sortBy]);
 
 
   // Real-time price filter logic
@@ -71,8 +110,33 @@ const BrowseServices = () => {
     if (maxPrice !== '') {
       filtered = filtered.filter(s => Number(s.price) <= Number(maxPrice));
     }
+    
+    // Sort services
+    if (sortBy === 'distance' && userLocation) {
+      filtered = [...filtered].sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+    } else if (sortBy === 'price') {
+      filtered = [...filtered].sort((a, b) => Number(a.price) - Number(b.price));
+    } else if (sortBy === 'rating') {
+      filtered = [...filtered].sort((a, b) => (b.rating?.averageRating || 0) - (a.rating?.averageRating || 0));
+    }
+    
     setFilteredServices(filtered);
-  }, [minPrice, maxPrice, services]);
+  }, [services, minPrice, maxPrice, sortBy, userLocation]);
+
+  const handleLocationGranted = (location) => {
+    setUserLocation({
+      lat: location.latitude,
+      lng: location.longitude
+    });
+  };
+
+  const formatDistance = (distance) => {
+    if (!distance) return '';
+    if (distance < 1) {
+      return `${Math.round(distance * 1000)}m away`;
+    }
+    return `${distance}km away`;
+  };
 
   // Booking logic
   const [bookingStatus, setBookingStatus] = useState({});
@@ -88,9 +152,15 @@ const BrowseServices = () => {
     setBookingStatus(prev => ({ ...prev, [serviceId]: 'loading' }));
     try {
       const token = localStorage.getItem('token');
-      const requestBody = { serviceId, date: date.trim() };
+      const requestBody = { 
+        serviceId, 
+        date: date.trim(),
+        location: '', // Optional for regular bookings
+        notes: ''     // Optional
+      };
       
-      const res = await fetch(`http://localhost:5000/api/bookings/book`, {
+      // Use unified booking system
+      const res = await fetch(`http://localhost:5000/api/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -223,6 +293,98 @@ const BrowseServices = () => {
           min="0"
         />
       </form>
+
+      {/* Location Controls */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '1rem', 
+        marginBottom: '2rem', 
+        alignItems: 'center',
+        padding: '1rem',
+        background: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+        flexWrap: 'wrap'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button
+            onClick={() => setShowMap(!showMap)}
+            style={{
+              padding: '0.5rem 1rem',
+              background: showMap ? '#3b82f6' : '#f8f9fa',
+              color: showMap ? 'white' : '#495057',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: '500'
+            }}
+          >
+            {showMap ? '📍 Hide Map' : '🗺️ Show Map'}
+          </button>
+          
+          <select 
+            value={sortBy} 
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              padding: '0.5rem 1rem',
+              border: '2px solid #e2e8f0',
+              borderRadius: '8px',
+              fontSize: '0.9rem'
+            }}
+          >
+            <option value="relevance">Sort by Relevance</option>
+            <option value="price">Sort by Price</option>
+            <option value="rating">Sort by Rating</option>
+            {userLocation && <option value="distance">Sort by Distance</option>}
+          </select>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+            <input
+              type="checkbox"
+              checked={showInstantOnly}
+              onChange={(e) => setShowInstantOnly(e.target.checked)}
+            />
+            ⚡ Instant Services Only
+          </label>
+        </div>
+
+        {!userLocation && (
+          <div style={{ marginLeft: 'auto' }}>
+            <LocationPermission 
+              onLocationGranted={handleLocationGranted}
+              showToggle={false}
+              autoRequest={false}
+            />
+          </div>
+        )}
+
+        {userLocation && (
+          <div style={{ 
+            marginLeft: 'auto', 
+            fontSize: '0.9rem', 
+            color: '#28a745',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            ✅ Location enabled - showing nearby services
+          </div>
+        )}
+      </div>
+
+      {/* Map Section */}
+      {showMap && userLocation && (
+        <div style={{ marginBottom: '2rem' }}>
+          <GoogleMap
+            center={userLocation}
+            services={filteredServices}
+            height="400px"
+            showUserLocation={true}
+          />
+        </div>
+      )}
+
       {loading ? (
         <div>Loading services...</div>
       ) : error ? (
@@ -231,137 +393,17 @@ const BrowseServices = () => {
         <div>No services available at the moment.</div>
       ) : (
         <div className="services-list" style={{ display: 'grid', gap: '1.5rem' }}>
-          {filteredServices.map(service => {
-            const categories = [
-              { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
-              { id: 'plumbing', name: 'Plumbing', icon: '🔧' },
-              { id: 'electrical', name: 'Electrical', icon: '⚡' },
-              { id: 'painting', name: 'Painting', icon: '🎨' },
-              { id: 'gardening', name: 'Gardening', icon: '🌱' },
-              { id: 'moving', name: 'Moving', icon: '📦' },
-              { id: 'handyman', name: 'Handyman', icon: '🔨' },
-              { id: 'automotive', name: 'Automotive', icon: '🚗' },
-              { id: 'tutoring', name: 'Tutoring', icon: '📚' },
-              { id: 'fitness', name: 'Fitness', icon: '💪' },
-              { id: 'beauty', name: 'Beauty & Wellness', icon: '💄' },
-              { id: 'pet-care', name: 'Pet Care', icon: '🐕' },
-              { id: 'appliance-repair', name: 'Appliance Repair', icon: '🔧' },
-              { id: 'carpentry', name: 'Carpentry', icon: '🪚' },
-              { id: 'roofing', name: 'Roofing', icon: '🏠' },
-              { id: 'others', name: 'Others', icon: '⭐' }
-            ];
-            
-            // Handle missing or undefined category by defaulting to 'others'
-            const serviceCategory = service.category || 'others';
-            const categoryInfo = categories.find(cat => cat.id === serviceCategory) || { name: 'Others', icon: '⚡' };
-            
-            return (
-              <div key={service._id} className="service-card" style={{ 
-                background: 'white', 
-                padding: '1.5rem', 
-                borderRadius: '12px', 
-                boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-                border: '1px solid #e2e8f0',
-                transition: 'transform 0.2s ease, shadow 0.2s ease'
-              }}
-              onMouseEnter={e => {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
-              }}
-              onMouseLeave={e => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                  <h3 style={{ margin: 0, color: '#2d3748', fontSize: '1.25rem', fontWeight: '600' }}>{service.title}</h3>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    background: '#f7fafc',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '20px',
-                    fontSize: '0.8rem',
-                    color: '#4a5568',
-                    fontWeight: '500'
-                  }}>
-                    <span style={{ fontSize: '1rem' }}>{categoryInfo.icon}</span>
-                    {categoryInfo.name}
-                  </div>
-                </div>
-                <p style={{ margin: '0.75rem 0', color: '#4a5568', lineHeight: '1.5' }}>{service.description}</p>
-                <p style={{ 
-                  fontWeight: '700', 
-                  color: '#059669', 
-                  fontSize: '1.1rem',
-                  marginBottom: '1rem'
-                }}>${service.price}</p>
-                
-                {service.provider && (
-                  <p style={{ 
-                    fontSize: '0.9rem', 
-                    color: '#6b7280', 
-                    marginBottom: '1rem',
-                    fontStyle: 'italic'
-                  }}>
-                    Provider: {service.provider.name}
-                  </p>
-                )}
-                
-                <input
-                  type="date"
-                  value={bookingDates[service._id] || ''}
-                  onChange={e => setBookingDates(prev => ({ ...prev, [service._id]: e.target.value }))}
-                  style={{ 
-                    width: '100%',
-                    marginBottom: '0.75rem', 
-                    padding: '0.75rem', 
-                    borderRadius: '8px', 
-                    border: '2px solid #e2e8f0',
-                    fontSize: '0.95rem',
-                    outline: 'none',
-                    transition: 'border-color 0.3s ease'
-                  }}
-                  onFocus={e => e.target.style.borderColor = '#3b82f6'}
-                  onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                />
-                <button
-                  style={{ 
-                    width: '100%',
-                    padding: '0.75rem 1rem', 
-                    borderRadius: '8px', 
-                    background: bookingStatus[service._id] === 'loading' ? '#9ca3af' : '#059669', 
-                    color: 'white', 
-                    border: 'none', 
-                    fontWeight: '600', 
-                    cursor: bookingStatus[service._id] === 'loading' ? 'not-allowed' : 'pointer',
-                    transition: 'background-color 0.3s ease',
-                    fontSize: '0.95rem'
-                  }}
-                  disabled={bookingStatus[service._id] === 'loading'}
-                  onClick={() => handleBook(service._id)}
-                  onMouseEnter={e => {
-                    if (bookingStatus[service._id] !== 'loading') {
-                      e.target.style.background = '#047857';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (bookingStatus[service._id] !== 'loading') {
-                      e.target.style.background = '#059669';
-                    }
-                  }}
-                >
-                  {bookingStatus[service._id] === 'loading' ? 'Booking...' : 'Book Service'}
-                </button>
-                {bookingStatus[service._id] === 'success' && (
-                  <p style={{ color: '#059669', marginTop: '0.75rem', fontWeight: '500', textAlign: 'center' }}>✅ Booking successful!</p>
-                )}
-                {bookingStatus[service._id] && bookingStatus[service._id] !== 'success' && bookingStatus[service._id] !== 'loading' && (
-                  <p style={{ color: '#ef4444', marginTop: '0.75rem', fontWeight: '500', textAlign: 'center' }}>❌ {bookingStatus[service._id]}</p>
-                )}
-              </div>
-            );
-          })}
+          {filteredServices.map(service => (
+            <ServiceCardWithBargain
+              key={service._id}
+              service={service}
+              bookingDates={bookingDates}
+              setBookingDates={setBookingDates}
+              bookingStatus={bookingStatus}
+              handleBook={handleBook}
+              formatDistance={formatDistance}
+            />
+          ))}
         </div>
       )}
     </div>

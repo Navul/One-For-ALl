@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const ServiceList = () => {
     const [services, setServices] = useState([]);
@@ -12,6 +13,7 @@ const ServiceList = () => {
                 description: 'Deep house cleaning and maintenance services',
                 provider: 'Clean Pro Services',
                 category: 'cleaning',
+                price: 150,
                 icon: '🧹',
                 color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
             },
@@ -21,6 +23,7 @@ const ServiceList = () => {
                 description: 'Expert plumbing fixes and installations',
                 provider: 'Fix It Fast',
                 category: 'plumbing',
+                price: 200,
                 icon: '🔧',
                 color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
             },
@@ -30,6 +33,7 @@ const ServiceList = () => {
                 description: 'Licensed electrical installations and repairs',
                 provider: 'Spark Solutions',
                 category: 'electrical',
+                price: 250,
                 icon: '⚡',
                 color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
             },
@@ -39,6 +43,7 @@ const ServiceList = () => {
                 description: 'Professional landscaping and garden care',
                 provider: 'Green Thumb',
                 category: 'gardening',
+                price: 300,
                 icon: '🌱',
                 color: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
             },
@@ -48,6 +53,7 @@ const ServiceList = () => {
                 description: 'Interior and exterior painting services',
                 provider: 'Color Masters',
                 category: 'painting',
+                price: 400,
                 icon: '🎨',
                 color: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
             },
@@ -57,6 +63,7 @@ const ServiceList = () => {
                 description: 'Professional moving and packing services',
                 provider: 'Swift Movers',
                 category: 'moving',
+                price: 350,
                 icon: '📦',
                 color: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)'
             },
@@ -66,7 +73,8 @@ const ServiceList = () => {
                 description: 'General repairs and home maintenance',
                 provider: 'Fix-It Experts',
                 category: 'handyman',
-                icon: '�',
+                price: 180,
+                icon: '🔨',
                 color: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)'
             },
             { 
@@ -75,6 +83,7 @@ const ServiceList = () => {
                 description: 'Professional automotive repair services',
                 provider: 'Auto Care Plus',
                 category: 'automotive',
+                price: 220,
                 icon: '🚗',
                 color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
             }
@@ -103,10 +112,11 @@ const ServiceList = () => {
                 <div className="services-carousel">
                     {/* Duplicate services for seamless infinite scroll */}
                     {[...servicesArray, ...servicesArray].map((service, index) => (
-                        <div 
+                        <Link 
                             key={`${service._id}-${index}`}
+                            to={`/service/${service._id}`}
                             className="service-card"
-                            style={{ '--card-bg': service.color }}
+                            style={{ '--card-bg': service.color, textDecoration: 'none', color: 'inherit' }}
                         >
                             <div className="service-icon">
                                 {service.icon}
@@ -117,16 +127,20 @@ const ServiceList = () => {
                                 <div className="service-provider">
                                     <span>by {service.provider}</span>
                                 </div>
+                                <div className="service-price">
+                                    <span className="price-label">Starting from</span>
+                                    <span className="price-amount">${service.price}</span>
+                                </div>
                             </div>
                             <div className="service-overlay">
-                                <button className="service-cta">
-                                    Book Now
+                                <div className="service-cta">
+                                    View Details & Bargain
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                                         <path d="M5 12h14m-7-7 7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                     </svg>
-                                </button>
+                                </div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </div>
@@ -234,6 +248,29 @@ const ServiceList = () => {
                     opacity: 0.8;
                     font-weight: 500;
                     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+                    margin-bottom: 1rem;
+                }
+
+                .service-price {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    margin-top: auto;
+                }
+
+                .price-label {
+                    font-size: 0.75rem;
+                    opacity: 0.7;
+                    margin-bottom: 0.2rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+
+                .price-amount {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    color: #fff;
+                    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
                 }
 
                 .service-overlay {

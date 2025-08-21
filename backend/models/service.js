@@ -44,6 +44,44 @@ const serviceSchema = new mongoose.Schema({
     availability: {
         type: Boolean,
         default: true
+    },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number], // [longitude, latitude]
+            index: '2dsphere'
+        },
+        address: String
+    },
+    instantService: {
+        type: Boolean,
+        default: false
+    },
+    estimatedDuration: {
+        type: Number, // in minutes
+        default: 60
+    },
+    serviceRadius: {
+        type: Number, // in kilometers
+        default: 5,
+        min: 1,
+        max: 25
+    },
+    rating: {
+        averageRating: {
+            type: Number,
+            default: 0,
+            min: 0,
+            max: 5
+        },
+        totalReviews: {
+            type: Number,
+            default: 0
+        }
     }
 }, {
     timestamps: true

@@ -46,14 +46,42 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request logging middleware
+app.use((req, res, next) => {
+    console.log(`🌐 ${req.method} ${req.url} - ${new Date().toISOString()}`);
+    next();
+});
+
 // Routes
 const serviceRoutes = require('./routes/serviceRoutes');
 const authRoutes = require('./routes/authRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const locationRoutes = require('./routes/locationRoutes');
+const debugRoutes = require('./routes/debugRoutes');
+const negotiationRoutes = require('./routes/negotiationRoutes');
+// const notificationRoutes = require('./routes/notificationRoutes');
 
+console.log('🚀 Loading routes...');
 serviceRoutes(app);
 app.use('/api/auth', authRoutes);
+console.log('📋 Booking routes loaded');
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/location', locationRoutes);
+app.use('/api/debug', debugRoutes);
+app.use('/api/negotiations', negotiationRoutes);
+console.log('✅ All routes loaded successfully');
+
+// Add a simple test endpoint to verify the server is working
+app.get('/test', (req, res) => {
+    res.json({ success: true, message: 'Server is working!' });
+});
+
+// Add a test endpoint specifically for booking routes
+app.post('/api/bookings/test-post', (req, res) => {
+    res.json({ success: true, message: 'POST endpoint is working!' });
+});
+
+// app.use('/api/notifications', notificationRoutes);
 
 // Start the server
 app.listen(PORT, () => {

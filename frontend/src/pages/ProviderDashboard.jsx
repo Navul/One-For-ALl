@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+// import ProviderNotifications from '../components/ProviderNotifications';
 
 function AddServiceForm({ onServiceAdded, onClose }) {
     const [title, setTitle] = useState('');
@@ -148,8 +149,8 @@ const ProviderDashboard = () => {
         try {
             const token = localStorage.getItem('token');
             
-            // Fetch provider's services
-            const servicesResponse = await fetch('http://localhost:5000/api/services/my-services', {
+            // Fetch provider's services (both active and inactive for management)
+            const servicesResponse = await fetch('http://localhost:5000/api/services/all-my-services', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -173,6 +174,37 @@ const ProviderDashboard = () => {
             console.error('Error fetching provider data:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleToggleAvailability = async (serviceId, currentAvailability) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5000/api/services/${serviceId}/toggle-availability`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                // Update the service in the local state
+                setMyServices(prevServices => 
+                    prevServices.map(service => 
+                        service._id === serviceId 
+                            ? { ...service, availability: data.data.availability }
+                            : service
+                    )
+                );
+                console.log(data.message);
+            } else {
+                const errorData = await response.json();
+                console.error('Error toggling availability:', errorData.message);
+            }
+        } catch (error) {
+            console.error('Error toggling service availability:', error);
         }
     };
 
@@ -201,7 +233,7 @@ const ProviderDashboard = () => {
                         <div className="stats-cards">
                             <div className="stat-card">
                                 <h3>Active Services</h3>
-                                <p className="stat-number">{myServices.length}</p>
+                                <p className="stat-number">{myServices.filter(s => s.availability).length}</p>
                             </div>
                             <div className="stat-card">
                                 <h3>Pending Bookings</h3>
@@ -256,29 +288,64 @@ const ProviderDashboard = () => {
                                     const categoryInfo = categories.find(cat => cat.id === serviceCategory) || { name: 'Others', icon: '⚡' };
                                     
                                     return (
-                                        <div key={service._id || index} className="service-card">
+                                        <div key={service._id || index} className="service-card" style={{
+                                            border: service.availability ? '2px solid #4CAF50' : '2px solid #f44336',
+                                            borderRadius: '8px',
+                                            backgroundColor: service.availability ? '#f8fff8' : '#fff8f8'
+                                        }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                                                 <h4 style={{ margin: 0, flex: 1 }}>{service.title}</h4>
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.25rem',
-                                                    background: '#f3f4f6',
-                                                    padding: '0.25rem 0.75rem',
-                                                    borderRadius: '20px',
-                                                    fontSize: '0.75rem',
-                                                    color: '#6b7280',
-                                                    fontWeight: '500'
-                                                }}>
-                                                    <span style={{ fontSize: '0.9rem' }}>{categoryInfo.icon}</span>
-                                                    {categoryInfo.name}
+                                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.25rem',
+                                                        background: '#f3f4f6',
+                                                        padding: '0.25rem 0.75rem',
+                                                        borderRadius: '20px',
+                                                        fontSize: '0.75rem',
+                                                        color: '#6b7280',
+                                                        fontWeight: '500'
+                                                    }}>
+                                                        <span style={{ fontSize: '0.9rem' }}>{categoryInfo.icon}</span>
+                                                        {categoryInfo.name}
+                                                    </div>
+                                                    <div style={{
+                                                        fontSize: '0.7rem',
+                                                        fontWeight: 'bold',
+                                                        color: service.availability ? '#4CAF50' : '#f44336',
+                                                        background: 'white',
+                                                        padding: '0.25rem 0.5rem',
+                                                        borderRadius: '12px',
+                                                        border: `1px solid ${service.availability ? '#4CAF50' : '#f44336'}`
+                                                    }}>
+                                                        {service.availability ? 'ACTIVE' : 'INACTIVE'}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <p style={{ marginBottom: '0.75rem' }}>{service.description}</p>
-                                            <p className="price" style={{ marginBottom: '1rem' }}>${service.price || '0'}</p>
-                                            <div className="service-actions">
+                                            <p style={{ marginBottom: '0.5rem' }}>{service.description}</p>
+                                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                                                <p><strong>Starting:</strong> ₹{service.startingPrice}</p>
+                                                <p><strong>Min:</strong> ₹{service.minPrice}</p>
+                                                <p><strong>Max:</strong> ₹{service.maxPrice}</p>
+                                            </div>
+                                            <div className="service-actions" style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <button className="edit-btn">Edit</button>
                                                 <button className="delete-btn">Delete</button>
+                                                <button
+                                                    onClick={() => handleToggleAvailability(service._id, service.availability)}
+                                                    style={{
+                                                        backgroundColor: service.availability ? '#f44336' : '#4CAF50',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        padding: '0.5rem 1rem',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.8rem'
+                                                    }}
+                                                >
+                                                    {service.availability ? 'Deactivate' : 'Activate'}
+                                                </button>
                                             </div>
                                         </div>
                                     );
@@ -289,6 +356,9 @@ const ProviderDashboard = () => {
                         )}
                     </div>
                 </div>
+
+                {/* Provider Notifications Section - temporarily disabled until notifications API is ready */}
+                {/* <ProviderNotifications /> */}
             </main>
 
             <style jsx>{`

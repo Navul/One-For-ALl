@@ -39,6 +39,36 @@ const userSchema = new mongoose.Schema({
         state: String,
         zipCode: String
     },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number], // [longitude, latitude]
+            index: '2dsphere'
+        },
+        address: String,
+        isLocationEnabled: {
+            type: Boolean,
+            default: false
+        },
+        lastUpdated: {
+            type: Date,
+            default: Date.now
+        }
+    },
+    serviceRadius: {
+        type: Number,
+        default: 10, // in kilometers
+        min: 1,
+        max: 50
+    },
+    instantServiceAvailable: {
+        type: Boolean,
+        default: false
+    },
     isActive: {
         type: Boolean,
         default: true

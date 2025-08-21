@@ -1,0 +1,178 @@
+// Simple booking test page to debug the issue
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Booking Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { 
+            width: 300px; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button:hover { background: #0056b3; }
+        .result { 
+            margin-top: 20px; 
+            padding: 10px; 
+            border-radius: 4px; 
+        }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Booking Debug Test</h1>
+    
+    <form id="bookingForm">
+        <div class="form-group">
+            <label for="token">Auth Token:</label>
+            <input type="text" id="token" placeholder="Bearer token (get from localStorage)">
+            <button type="button" onclick="getTokenFromStorage()">Get from localStorage</button>
+        </div>
+
+        <div class="form-group">
+            <label for="serviceId">Service ID:</label>
+            <input type="text" id="serviceId" placeholder="Enter valid service ID (e.g., 675a1b2c3d4e5f6789012345)">
+        </div>
+
+        <div class="form-group">
+            <label for="date">Date:</label>
+            <input type="datetime-local" id="date">
+        </div>
+
+        <button type="button" onclick="testBooking()">Test Booking</button>
+        <button type="button" onclick="testServicesList()">List All Services</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        function getTokenFromStorage() {
+            const token = localStorage.getItem('token');
+            document.getElementById('token').value = token || '';
+        }
+
+        async function testServicesList() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Fetching services...</p>';
+
+            try {
+                const response = await fetch('http://localhost:5000/api/services', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>Available Services:</h3>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>Error fetching services:</h3>
+                            <p>Status: ${response.status}</p>
+                            <p>Message: ${data.message || 'Unknown error'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Network Error:</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testBooking() {
+            const token = document.getElementById('token').value;
+            const serviceId = document.getElementById('serviceId').value;
+            const date = document.getElementById('date').value;
+            const resultDiv = document.getElementById('result');
+
+            if (!token) {
+                resultDiv.innerHTML = '<div class="error">Please provide an auth token</div>';
+                return;
+            }
+
+            if (!serviceId) {
+                resultDiv.innerHTML = '<div class="error">Please provide a service ID</div>';
+                return;
+            }
+
+            if (!date) {
+                resultDiv.innerHTML = '<div class="error">Please select a date</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<p>Testing booking...</p>';
+
+            try {
+                const response = await fetch('http://localhost:5000/api/bookings/book', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        serviceId: serviceId,
+                        date: date
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>Booking Successful!</h3>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>Booking Failed:</h3>
+                            <p>Status: ${response.status}</p>
+                            <p>Message: ${data.message || 'Unknown error'}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Network Error:</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-populate current date/time
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('date').value = now.toISOString().slice(0, 16);
+    </script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
+import NegotiationsBadge from './NegotiationsBadge';
 
 const Navbar = () => {
     const location = useLocation();
@@ -37,11 +39,11 @@ const Navbar = () => {
 
     const getDashboardLink = () => {
         if (user?.role === 'provider') {
-            return '/provider/dashboard';
+            return '/provider-dashboard';
         } else if (user?.role === 'customer') {
-            return '/customer/dashboard';
+            return '/user-dashboard';
         } else if (user?.role === 'admin') {
-            return '/admin/dashboard';
+            return '/admin-dashboard';
         }
         return '/dashboard';
     };
@@ -63,12 +65,46 @@ const Navbar = () => {
                                 Home
                             </Link>
                             
-                            <Link 
-                                to="/browse-services" 
-                                className={`nav-link ${location.pathname === '/browse-services' ? 'active' : ''}`}
-                            >
-                                Services
-                            </Link>
+                            {/* Only show Services link to customers and non-logged users */}
+                            {(!isAuthenticated || user?.role === 'customer' || user?.role === 'user') && (
+                                <Link 
+                                    to="/browse-services" 
+                                    className={`nav-link ${location.pathname === '/browse-services' ? 'active' : ''}`}
+                                >
+                                    Services
+                                </Link>
+                            )}
+
+                            {/* Show My Services link for providers */}
+                            {isAuthenticated && user?.role === 'provider' && (
+                                <Link 
+                                    to="/my-services" 
+                                    className={`nav-link ${location.pathname === '/my-services' ? 'active' : ''}`}
+                                >
+                                    My Services
+                                </Link>
+                            )}
+
+                            {/* Show Negotiations link for all authenticated users */}
+                            {isAuthenticated && (
+                                <Link 
+                                    to="/negotiations" 
+                                    className={`nav-link negotiations-link ${location.pathname === '/negotiations' ? 'active' : ''}`}
+                                >
+                                    Negotiations
+                                    <NegotiationsBadge />
+                                </Link>
+                            )}
+
+                            {isAuthenticated && (
+                                <Link 
+                                    to="/instant-services" 
+                                    className={`nav-link instant-service ${location.pathname === '/instant-services' ? 'active' : ''}`}
+                                >
+                                    <span className="instant-icon">⚡</span>
+                                    Instant Services
+                                </Link>
+                            )}
 
                             {isAuthenticated && (
                                 <Link 
@@ -89,6 +125,7 @@ const Navbar = () => {
                         <div className="navbar-actions">
                             {isAuthenticated ? (
                                 <div className="user-menu">
+                                    <NotificationBell />
                                     <div className="user-info">
                                         <div className="user-avatar">
                                             {user?.name?.charAt(0).toUpperCase() || 'U'}
@@ -139,13 +176,38 @@ const Navbar = () => {
                             Home
                         </Link>
                         
-                        <Link 
-                            to="/browse-services" 
-                            className={`mobile-nav-link ${location.pathname === '/browse-services' ? 'active' : ''}`}
-                            onClick={closeMenu}
-                        >
-                            Services
-                        </Link>
+                        {/* Only show Services link to customers and non-logged users */}
+                        {(!isAuthenticated || user?.role === 'customer' || user?.role === 'user') && (
+                            <Link 
+                                to="/browse-services" 
+                                className={`mobile-nav-link ${location.pathname === '/browse-services' ? 'active' : ''}`}
+                                onClick={closeMenu}
+                            >
+                                Services
+                            </Link>
+                        )}
+
+                        {/* Show My Services link for providers */}
+                        {isAuthenticated && user?.role === 'provider' && (
+                            <Link 
+                                to="/provider-dashboard" 
+                                className={`mobile-nav-link ${location.pathname === '/provider-dashboard' ? 'active' : ''}`}
+                                onClick={closeMenu}
+                            >
+                                My Services
+                            </Link>
+                        )}
+
+                        {isAuthenticated && (
+                            <Link 
+                                to="/instant-services" 
+                                className={`mobile-nav-link instant-service ${location.pathname === '/instant-services' ? 'active' : ''}`}
+                                onClick={closeMenu}
+                            >
+                                <span className="instant-icon">⚡</span>
+                                Instant Services
+                            </Link>
+                        )}
 
                         {isAuthenticated && (
                             <Link 
@@ -530,6 +592,72 @@ const Navbar = () => {
                     .mobile-menu-btn {
                         display: flex;
                     }
+                }
+
+                /* Instant Service Link Styles */
+                .instant-service {
+                    position: relative;
+                    background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+                    color: white !important;
+                    border-radius: 20px;
+                    padding: 8px 16px !important;
+                    margin: 0 8px;
+                    font-weight: 600;
+                    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+                    transition: all 0.3s ease;
+                }
+
+                .instant-service:hover {
+                    background: linear-gradient(135deg, #ff3742 0%, #e73c3c 100%);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+                }
+
+                .instant-service.active {
+                    background: linear-gradient(135deg, #e73c3c 0%, #c0392b 100%);
+                    box-shadow: 0 4px 15px rgba(231, 60, 60, 0.5);
+                }
+
+                .instant-icon {
+                    font-size: 1.1em;
+                    margin-right: 6px;
+                    animation: pulse 2s infinite;
+                }
+
+                @keyframes pulse {
+                    0%, 100% {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                    50% {
+                        opacity: 0.8;
+                        transform: scale(1.1);
+                    }
+                }
+
+                /* Mobile instant service styles */
+                .mobile-nav-link.instant-service {
+                    background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+                    color: white;
+                    border-radius: 8px;
+                    padding: 12px 16px;
+                    margin: 8px 0;
+                    font-weight: 600;
+                    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+                }
+
+                .mobile-nav-link.instant-service:hover {
+                    background: linear-gradient(135deg, #ff3742 0%, #e73c3c 100%);
+                    color: white;
+                }
+
+                /* Negotiations link with badge positioning */
+                .negotiations-link {
+                    position: relative;
+                }
+
+                .mobile-nav-link.negotiations-link {
+                    position: relative;
                 }
             `}</style>
         </>

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 const UserDashboard = () => {
     const { user } = useAuth();
     const [services, setServices] = useState([]);
     const [bookings, setBookings] = useState([]);
+    const [negotiations, setNegotiations] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -30,6 +32,17 @@ const UserDashboard = () => {
             if (bookingsResponse.ok) {
                 const bookingsData = await bookingsResponse.json();
                 setBookings(bookingsData.bookings || []);
+            }
+
+            // Fetch user negotiations
+            const negotiationsResponse = await fetch('http://localhost:5000/api/negotiations?type=client&status=active', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (negotiationsResponse.ok) {
+                const negotiationsData = await negotiationsResponse.json();
+                setNegotiations(negotiationsData.negotiations || []);
             }
         } catch (error) {
             console.error('Error fetching user data:', error);
@@ -67,6 +80,13 @@ const UserDashboard = () => {
                             <div className="stat-card">
                                 <h3>My Bookings</h3>
                                 <p className="stat-number">{bookings.length}</p>
+                            </div>
+                            <div className="stat-card">
+                                <Link to="/negotiations" style={{ textDecoration: 'none', color: 'inherit' }}>
+                                    <h3>Active Negotiations</h3>
+                                    <p className="stat-number">{negotiations.length}</p>
+                                    <p className="stat-subtitle">Click to view</p>
+                                </Link>
                             </div>
                         </div>
                     </div>
@@ -182,6 +202,19 @@ const UserDashboard = () => {
                     font-weight: bold;
                     color: #4299e1;
                     margin: 0;
+                }
+
+                .stat-subtitle {
+                    font-size: 0.8rem;
+                    color: #718096;
+                    margin: 0.5rem 0 0 0;
+                    font-style: italic;
+                }
+
+                .stat-card:hover {
+                    transform: translateY(-2px);
+                    transition: transform 0.2s ease;
+                    cursor: pointer;
                 }
 
                 .bookings-section,
