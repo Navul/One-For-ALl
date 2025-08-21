@@ -20,7 +20,15 @@ const notificationSchema = new mongoose.Schema({
       'OFFER_DECLINED',
       'NEGOTIATION_EXPIRED',
       'BOOKING_CREATED',
-      'SERVICE_BOOKED'
+      'SERVICE_BOOKED',
+      'BOOKING_CONFIRMED',
+      'BOOKING_CANCELLED',
+      'BOOKING_COMPLETED',
+      'SERVICE_UPDATE',
+      'PAYMENT_SUCCESS',
+      'PAYMENT_FAILED',
+      'SYSTEM_UPDATE',
+      'PROVIDER_RESPONSE'
     ],
     required: true
   },
@@ -46,7 +54,35 @@ const notificationSchema = new mongoose.Schema({
       ref: 'Booking'
     },
     amount: Number,
-    offerAmount: Number
+    offerAmount: Number,
+    originalPrice: Number,
+    finalPrice: Number
+  },
+  // Action-related fields for interactive notifications
+  hasActions: {
+    type: Boolean,
+    default: false
+  },
+  actions: [{
+    label: String,
+    action: String,
+    style: String, // 'primary', 'secondary', 'danger', 'success'
+  }],
+  isActionable: {
+    type: Boolean,
+    default: true
+  },
+  // Priority level
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'urgent'],
+    default: 'medium'
+  },
+  // User role for role-based filtering
+  userRole: {
+    type: String,
+    enum: ['client', 'provider', 'admin'],
+    required: true
   },
   isRead: {
     type: Boolean,

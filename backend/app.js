@@ -59,7 +59,7 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const debugRoutes = require('./routes/debugRoutes');
 const negotiationRoutes = require('./routes/negotiationRoutes');
-// const notificationRoutes = require('./routes/notificationRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 console.log('🚀 Loading routes...');
 serviceRoutes(app);
@@ -69,6 +69,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/negotiations', negotiationRoutes);
+app.use('/api/notifications', notificationRoutes);
 console.log('✅ All routes loaded successfully');
 
 // Add a simple test endpoint to verify the server is working

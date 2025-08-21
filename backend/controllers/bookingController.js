@@ -2,6 +2,7 @@ const Booking = require('../models/booking');
 const Service = require('../models/service');
 const Negotiation = require('../models/negotiation');
 const mongoose = require('mongoose');
+const { sendBookingNotification } = require('./notificationController');
 
 // Create a booking - Unified system for regular and negotiation bookings
 exports.createBooking = async (req, res) => {
@@ -169,6 +170,14 @@ exports.createBooking = async (req, res) => {
         }
         
         console.log('✅ Booking created successfully:', booking._id);
+        
+        // Send notification to both client and provider
+        try {
+            await sendBookingNotification(booking._id, 'BOOKING_CREATED');
+        } catch (notificationError) {
+            console.error('Failed to send booking notification:', notificationError);
+            // Don't fail the booking if notification fails
+        }
         
         // Populate the response
         const populatedBooking = await Booking.findById(booking._id)

@@ -69,6 +69,56 @@ const ProviderNotifications = () => {
     }
   };
 
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await notificationService.markAsRead(notificationId);
+      setNotifications(prev =>
+        prev.map(n =>
+          n._id === notificationId ? { ...n, isRead: true } : n
+        )
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId) => {
+    try {
+      await notificationService.deleteNotification(notificationId);
+      setNotifications(prev => prev.filter(n => n._id !== notificationId));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const handleNotificationAction = async (notification, actionType, actionData = {}) => {
+    try {
+      await notificationService.handleAction(notification._id, actionType, actionData);
+      // Refresh notifications after action
+      await fetchNotifications();
+    } catch (error) {
+      console.error('Error handling notification action:', error);
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return '#ef4444';
+      case 'medium': return '#f59e0b';
+      case 'low': return '#6b7280';
+      default: return '#e5e7eb';
+    }
+  };
+
+  const getPriorityLabel = (priority) => {
+    switch (priority) {
+      case 'high': return '🔴';
+      case 'medium': return '🟡';
+      case 'low': return '🔵';
+      default: return '';
+    }
+  };
+
   const formatTimeAgo = (dateString) => {
     const now = new Date();
     const past = new Date(dateString);
@@ -173,6 +223,7 @@ const ProviderNotifications = () => {
                   style={{
                     background: notification.isRead ? 'white' : '#eff6ff',
                     border: '1px solid #e5e7eb',
+                    borderLeft: `4px solid ${getPriorityColor(notification.priority)}`,
                     borderRadius: '12px',
                     padding: '1.5rem',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
@@ -183,14 +234,57 @@ const ProviderNotifications = () => {
                       {getNotificationIcon(notification.type)}
                     </span>
                     <div style={{ flex: 1 }}>
-                      <h4 style={{
-                        margin: '0 0 0.5rem 0',
-                        color: '#111827',
-                        fontSize: '1.1rem',
-                        fontWeight: notification.isRead ? '500' : '600'
-                      }}>
-                        {notification.title}
-                      </h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                        <h4 style={{
+                          margin: 0,
+                          color: '#111827',
+                          fontSize: '1.1rem',
+                          fontWeight: notification.isRead ? '500' : '600',
+                          flex: 1
+                        }}>
+                          {notification.title}
+                        </h4>
+                        {notification.priority && (
+                          <span style={{ fontSize: '0.875rem' }}>
+                            {getPriorityLabel(notification.priority)}
+                          </span>
+                        )}
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          {!notification.isRead && (
+                            <button
+                              onClick={() => handleMarkAsRead(notification._id)}
+                              style={{
+                                background: '#3b82f6',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer'
+                              }}
+                              title="Mark as read"
+                            >
+                              ✓
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteNotification(notification._id)}
+                            style={{
+                              background: '#ef4444',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              padding: '0.25rem 0.5rem',
+                              fontSize: '0.75rem',
+                              cursor: 'pointer'
+                            }}
+                            title="Delete notification"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                      
                       <p style={{
                         margin: '0 0 1rem 0',
                         color: '#6b7280',
@@ -198,6 +292,38 @@ const ProviderNotifications = () => {
                       }}>
                         {notification.message}
                       </p>
+
+                      {/* Action Buttons */}
+                      {notification.hasActions && notification.actions && notification.actions.length > 0 && (
+                        <div style={{
+                          display: 'flex',
+                          gap: '0.5rem',
+                          marginBottom: '1rem',
+                          flexWrap: 'wrap'
+                        }}>
+                          {notification.actions.map((action, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleNotificationAction(notification, action.type, action.data || {})}
+                              style={{
+                                background: action.style === 'success' ? '#059669' :
+                                          action.style === 'warning' ? '#f59e0b' :
+                                          action.style === 'danger' ? '#ef4444' : '#3b82f6',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '0.5rem 1rem',
+                                fontSize: '0.875rem',
+                                fontWeight: '500',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       <div style={{
                         display: 'flex',
                         justifyContent: 'space-between',

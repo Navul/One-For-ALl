@@ -96,6 +96,16 @@ const Navbar = () => {
                                 </Link>
                             )}
 
+                            {/* Show Notifications link for all authenticated users */}
+                            {isAuthenticated && (
+                                <Link 
+                                    to="/notifications" 
+                                    className={`nav-link ${location.pathname === '/notifications' ? 'active' : ''}`}
+                                >
+                                    Notifications
+                                </Link>
+                            )}
+
                             {isAuthenticated && (
                                 <Link 
                                     to="/instant-services" 
@@ -206,6 +216,29 @@ const Navbar = () => {
                             >
                                 <span className="instant-icon">⚡</span>
                                 Instant Services
+                            </Link>
+                        )}
+
+                        {/* Show Negotiations link for all authenticated users */}
+                        {isAuthenticated && (
+                            <Link 
+                                to="/negotiations" 
+                                className={`mobile-nav-link negotiations-link ${location.pathname === '/negotiations' ? 'active' : ''}`}
+                                onClick={closeMenu}
+                            >
+                                Negotiations
+                                <NegotiationsBadge />
+                            </Link>
+                        )}
+
+                        {/* Show Notifications link for all authenticated users */}
+                        {isAuthenticated && (
+                            <Link 
+                                to="/notifications" 
+                                className={`mobile-nav-link ${location.pathname === '/notifications' ? 'active' : ''}`}
+                                onClick={closeMenu}
+                            >
+                                Notifications
                             </Link>
                         )}
 

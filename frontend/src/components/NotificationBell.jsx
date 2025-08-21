@@ -65,6 +65,51 @@ const NotificationBell = ({ onUnreadCountChange }) => {
     }
   };
 
+  const handleNotificationAction = async (notification, actionType, actionData = {}) => {
+    try {
+      await notificationService.handleAction(notification._id, actionType, actionData);
+      
+      // Remove notification after action or refresh the list
+      await fetchNotifications();
+      
+      // Close dropdown after action
+      setShowNotifications(false);
+    } catch (error) {
+      console.error('Error handling notification action:', error);
+    }
+  };
+
+  const handleDeleteNotification = async (notification, e) => {
+    e.stopPropagation(); // Prevent notification click
+    try {
+      await notificationService.deleteNotification(notification._id);
+      setNotifications(prev => prev.filter(n => n._id !== notification._id));
+      if (!notification.isRead) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return '#ef4444';
+      case 'medium': return '#f59e0b';
+      case 'low': return '#6b7280';
+      default: return '#6b7280';
+    }
+  };
+
+  const getPriorityLabel = (priority) => {
+    switch (priority) {
+      case 'high': return '🔴';
+      case 'medium': return '🟡';
+      case 'low': return '🔵';
+      default: return '';
+    }
+  };
+
   const handleMarkAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
@@ -222,14 +267,37 @@ const NotificationBell = ({ onUnreadCountChange }) => {
                       {getNotificationIcon(notification.type)}
                     </span>
                     <div style={{ flex: 1 }}>
-                      <p style={{
-                        margin: '0 0 0.25rem 0',
-                        fontWeight: notification.isRead ? '500' : '600',
-                        fontSize: '0.95rem',
-                        color: '#111827'
-                      }}>
-                        {notification.title}
-                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                        <p style={{
+                          margin: 0,
+                          fontWeight: notification.isRead ? '500' : '600',
+                          fontSize: '0.95rem',
+                          color: '#111827',
+                          flex: 1
+                        }}>
+                          {notification.title}
+                        </p>
+                        {notification.priority && (
+                          <span style={{ fontSize: '0.75rem' }}>
+                            {getPriorityLabel(notification.priority)}
+                          </span>
+                        )}
+                        <button
+                          onClick={(e) => handleDeleteNotification(notification, e)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#9ca3af',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            borderRadius: '4px'
+                          }}
+                          title="Delete notification"
+                        >
+                          ❌
+                        </button>
+                      </div>
                       <p style={{
                         margin: '0 0 0.5rem 0',
                         fontSize: '0.85rem',
@@ -238,6 +306,41 @@ const NotificationBell = ({ onUnreadCountChange }) => {
                       }}>
                         {notification.message}
                       </p>
+                      
+                      {/* Action Buttons */}
+                      {notification.hasActions && notification.actions && notification.actions.length > 0 && (
+                        <div style={{
+                          display: 'flex',
+                          gap: '0.5rem',
+                          marginBottom: '0.5rem',
+                          flexWrap: 'wrap'
+                        }}>
+                          {notification.actions.map((action, index) => (
+                            <button
+                              key={index}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNotificationAction(notification, action.type, action.data || {});
+                              }}
+                              style={{
+                                background: action.style === 'success' ? '#059669' :
+                                          action.style === 'warning' ? '#f59e0b' :
+                                          action.style === 'danger' ? '#ef4444' : '#3b82f6',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.75rem',
+                                fontWeight: '500',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
                       <div style={{
                         display: 'flex',
                         justifyContent: 'space-between',

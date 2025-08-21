@@ -6,6 +6,8 @@ import BrowseServices from './pages/BrowseServices';
 import InstantServices from './pages/InstantServices';
 import ServiceDetails from './pages/ServiceDetails';
 import NegotiationsDashboard from './pages/NegotiationsDashboard';
+import Notifications from './pages/Notifications';
+import NotificationTest from './pages/NotificationTest';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import UserDashboard from './pages/UserDashboard';
@@ -45,6 +47,26 @@ const App = () => {
                         element={
                             <ProtectedRoute allowedRoles={['user', 'provider', 'admin']}>
                                 <NegotiationsDashboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    
+                    {/* Notifications route */}
+                    <Route 
+                        path="/notifications" 
+                        element={
+                            <ProtectedRoute allowedRoles={['user', 'provider', 'admin']}>
+                                <Notifications />
+                            </ProtectedRoute>
+                        }
+                    />
+                    
+                    {/* Notification Test route */}
+                    <Route 
+                        path="/notification-test" 
+                        element={
+                            <ProtectedRoute allowedRoles={['user', 'provider', 'admin']}>
+                                <NotificationTest />
                             </ProtectedRoute>
                         }
                     />
