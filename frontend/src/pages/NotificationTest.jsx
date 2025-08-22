@@ -45,8 +45,6 @@ const NotificationTest = () => {
   const getNotificationTitle = (type) => {
     const titles = {
       'BOOKING_CREATED': '🎉 New Booking Request',
-      'NEGOTIATION_STARTED': '💰 New Price Negotiation',
-      'COUNTER_OFFER_RECEIVED': '💵 Counter Offer Received',
       'OFFER_ACCEPTED': '✅ Offer Accepted',
       'PAYMENT_RECEIVED': '💳 Payment Received',
       'REVIEW_RECEIVED': '⭐ New Review',
@@ -58,8 +56,6 @@ const NotificationTest = () => {
   const getNotificationMessage = (type) => {
     const messages = {
       'BOOKING_CREATED': 'A new booking request has been submitted for your service.',
-      'NEGOTIATION_STARTED': 'A customer wants to negotiate the price for your service.',
-      'COUNTER_OFFER_RECEIVED': 'You received a counter offer of $75 for your service.',
       'OFFER_ACCEPTED': 'Your offer has been accepted! Payment is being processed.',
       'PAYMENT_RECEIVED': 'Payment of $100 has been successfully received.',
       'REVIEW_RECEIVED': 'You received a 5-star review from a satisfied customer.',
@@ -74,14 +70,8 @@ const NotificationTest = () => {
         { type: 'accept_booking', label: 'Accept', style: 'success' },
         { type: 'decline_booking', label: 'Decline', style: 'danger' }
       ],
-      'NEGOTIATION_STARTED': [
-        { type: 'view_negotiation', label: 'View Details', style: 'primary' },
-        { type: 'respond_negotiation', label: 'Respond', style: 'warning' }
-      ],
-      'COUNTER_OFFER_RECEIVED': [
-        { type: 'accept_offer', label: 'Accept $75', style: 'success' },
-        { type: 'counter_offer', label: 'Counter', style: 'warning' },
-        { type: 'decline_offer', label: 'Decline', style: 'danger' }
+      'OFFER_ACCEPTED': [
+        { type: 'book_service', label: 'Book Now', style: 'primary' }
       ]
     };
     return actions[type] || [];

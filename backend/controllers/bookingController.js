@@ -205,12 +205,83 @@ exports.createBooking = async (req, res) => {
 exports.getUserBookings = async (req, res) => {
     try {
         console.log('📚 Getting bookings for user:', req.user._id);
-        const bookings = await Booking.find({ user: req.user._id })
-            .populate('service')
-            .populate('provider', 'name email')
-            .sort({ createdAt: -1 }); // Sort by newest first
+        
+        // First, let's check raw bookings without population
+        const rawBookings = await Booking.find({ user: req.user._id });
+        console.log('🔍 Raw bookings (first one):', rawBookings[0]);
+        
+        // Check if services exist
+        if (rawBookings.length > 0) {
+            const Service = require('../models/service');
+            const User = require('../models/User');
             
+            const firstBooking = rawBookings[0];
+            console.log('🎯 First booking service ID:', firstBooking.service);
+            
+            // Try to find the service directly
+            const service = await Service.findById(firstBooking.service);
+            console.log('🔍 Found service:', service);
+            
+            if (service && service.provider) {
+                console.log('👤 Service provider ID:', service.provider);
+                const provider = await User.findById(service.provider);
+                console.log('🔍 Found provider:', provider);
+            }
+        }
+        
+        let bookings = await Booking.find({ user: req.user._id })
+            .populate({
+                path: 'service',
+                select: 'title description price category provider',
+                populate: {
+                    path: 'provider',
+                    model: 'User',
+                    select: 'name email'
+                }
+            })
+            .populate({
+                path: 'provider',
+                model: 'User', 
+                select: 'name email'
+            })
+            .sort({ createdAt: -1 }); // Sort by newest first
+
+        // Manual fallback: if service.provider is still a string, populate it manually
+        const User = require('../models/User');
+        for (let booking of bookings) {
+            if (booking.service && booking.service.provider && typeof booking.service.provider === 'string') {
+                const providerObj = await User.findById(booking.service.provider).select('name email');
+                if (providerObj) {
+                    booking.service.provider = providerObj;
+                }
+            }
+        }
+
         console.log('✅ Found', bookings.length, 'bookings for user');
+
+        // Debug log each booking with detailed structure
+        bookings.forEach((booking, index) => {
+            console.log(`📋 Booking ${index + 1} Structure:`, {
+                id: booking._id,
+                service: booking.service ? {
+                    id: booking.service._id,
+                    title: booking.service.title,
+                    providerField: booking.service.provider,
+                    providerType: typeof booking.service.provider,
+                    providerIsObject: typeof booking.service.provider === 'object',
+                    providerName: booking.service.provider?.name,
+                    providerEmail: booking.service.provider?.email,
+                } : 'NO SERVICE',
+                directProvider: booking.provider ? {
+                    id: booking.provider._id,
+                    name: booking.provider.name,
+                    email: booking.provider.email
+                } : 'NO DIRECT PROVIDER',
+                date: booking.date,
+                status: booking.status
+            });
+        });
+
         res.json({ success: true, bookings });
     } catch (error) {
         console.error('❌ Error fetching user bookings:', error);

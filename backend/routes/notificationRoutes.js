@@ -7,8 +7,24 @@ const {
   markAllAsRead,
   getUnreadCount,
   deleteNotification,
-  handleNotificationAction
+  handleNotificationAction,
+  createTestNotification
 } = require('../controllers/notificationController');
+
+// Add logging middleware for debugging
+router.use((req, res, next) => {
+  console.log(`📩 Notification Route: ${req.method} ${req.path}`);
+  next();
+});
+
+// Test route without authentication
+router.get('/test-route', (req, res) => {
+  console.log('📩 Test route hit!');
+  res.json({ message: 'Notification routes are working!', timestamp: new Date().toISOString() });
+});
+
+// Create test notification (for testing purposes)
+router.post('/test', protect, createTestNotification);
 
 // Get user notifications (with role-based filtering)
 router.get('/', protect, getUserNotifications);

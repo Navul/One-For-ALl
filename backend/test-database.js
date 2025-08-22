@@ -35,6 +35,61 @@ const serviceSchema = new mongoose.Schema({
 
 const Service = mongoose.model('Service', serviceSchema);
 
+// Define notification schema
+const notificationSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true
+    },
+    type: {
+        type: String,
+        required: true,
+        enum: ['booking', 'message', 'system', 'payment', 'negotiation']
+    },
+    title: {
+        type: String,
+        required: true
+    },
+    message: {
+        type: String,
+        required: true
+    },
+    isRead: {
+        type: Boolean,
+        default: false
+    },
+    relatedId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: false
+    },
+    relatedModel: {
+        type: String,
+        required: false,
+        enum: ['Booking', 'Service', 'User', 'Negotiation']
+    },
+    actionRequired: {
+        type: Boolean,
+        default: false
+    },
+    priority: {
+        type: String,
+        enum: ['low', 'medium', 'high'],
+        default: 'medium'
+    }
+}, { timestamps: true });
+
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, enum: ['user', 'provider'], required: true }
+}, { timestamps: true });
+
+const Notification = mongoose.model('Notification', notificationSchema);
+const User = mongoose.model('User', userSchema);
+
 async function runTest() {
     try {
         // Clear existing services

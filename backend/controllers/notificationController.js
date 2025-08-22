@@ -3,90 +3,39 @@ const User = require('../models/User');
 const Service = require('../models/service');
 const Booking = require('../models/booking');
 
-// Helper function to create notifications with role management
-const createNotification = async ({ recipient, sender, type, title, message, data = {}, hasActions = false, actions = [], priority = 'medium', userRole }) => {
+// Helper function to create notifications (recipient is now userId)
+const createNotification = async ({ userId, title, message, type, relatedId, relatedModel, data = {}, hasActions = false, actions = [], isActionable = false }) => {
   try {
-    // Determine user role if not provided
-    if (!userRole) {
-      const recipientUser = await User.findById(recipient);
-      userRole = recipientUser ? recipientUser.role : 'client';
-    }
-
     const notification = new Notification({
-      recipient,
-      sender,
-      type,
+      userId,
       title,
       message,
+      type,
+      relatedId,
+      relatedModel,
       data,
       hasActions,
       actions,
-      isActionable: hasActions,
-      priority,
-      userRole
+      isActionable
     });
-    
     await notification.save();
-    console.log(`📩 Notification created for ${userRole}: ${title}`);
+    console.log(`📩 Notification created for user ${userId}: ${title}`);
     return notification;
   } catch (error) {
-    console.error('Error creating notification:', error);
+    console.error('❌ [createNotification] Error creating notification:', error);
     throw error;
   }
 };
 
-// Get user notifications with role-based filtering
+// Get all notifications for a user (no role filtering)
 const getUserNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
-    const userRole = req.user.role;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-    const unreadOnly = req.query.unreadOnly === 'true';
-
-    // Build query with role-based filtering
-    let query = { recipient: userId };
-    
-    // Role-based filtering - users only see notifications for their role or 'all'
-    if (userRole !== 'admin') {
-      query.userRole = { $in: [userRole, 'all'] };
-    }
-    
-    // Unread filter
-    if (unreadOnly) {
-      query.isRead = false;
-    }
-
-    const notifications = await Notification.find(query)
-      .populate('sender', 'name email role')
-      .populate('data.serviceId', 'title price category')
-      .populate('data.bookingId', 'date status finalPrice')
-      .sort({ priority: -1, createdAt: -1 }) // Sort by priority first, then by date
-      .skip(skip)
-      .limit(limit);
-
-    const totalCount = await Notification.countDocuments(query);
-    const unreadCount = await Notification.countDocuments({ 
-      recipient: userId, 
-      isRead: false,
-      userRole: userRole !== 'admin' ? { $in: [userRole, 'all'] } : { $exists: true }
-    });
-
-    res.json({
-      success: true,
-      notifications,
-      pagination: {
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
-        totalCount,
-        unreadCount
-      }
-    });
+    const notifications = await Notification.find({ userId }).sort({ createdAt: -1 });
+    res.status(200).json(notifications);
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Failed to fetch notifications' });
   }
 };
 
@@ -97,7 +46,7 @@ const markAsRead = async (req, res) => {
     const userId = req.user.id;
 
     const notification = await Notification.findOneAndUpdate(
-      { _id: notificationId, recipient: userId },
+      { _id: notificationId, userId: userId },
       { isRead: true, readAt: new Date() },
       { new: true }
     );
@@ -113,23 +62,15 @@ const markAsRead = async (req, res) => {
   }
 };
 
-// Mark all notifications as read with role filtering
+// Mark all notifications as read
 const markAllAsRead = async (req, res) => {
   try {
     const userId = req.user.id;
-    const userRole = req.user.role;
 
-    let query = { recipient: userId, isRead: false };
-    
-    // Role-based filtering
-    if (userRole !== 'admin') {
-      query.userRole = { $in: [userRole, 'all'] };
-    }
-
-    await Notification.updateMany(query, { 
-      isRead: true, 
-      readAt: new Date() 
-    });
+    await Notification.updateMany(
+      { userId: userId, isRead: false }, 
+      { isRead: true, readAt: new Date() }
+    );
 
     res.json({ success: true, message: 'All notifications marked as read' });
   } catch (error) {
@@ -138,20 +79,15 @@ const markAllAsRead = async (req, res) => {
   }
 };
 
-// Get unread count with role filtering
+// Get unread count
 const getUnreadCount = async (req, res) => {
   try {
     const userId = req.user.id;
-    const userRole = req.user.role;
     
-    let query = { recipient: userId, isRead: false };
-    
-    // Role-based filtering
-    if (userRole !== 'admin') {
-      query.userRole = { $in: [userRole, 'all'] };
-    }
-    
-    const unreadCount = await Notification.countDocuments(query);
+    const unreadCount = await Notification.countDocuments({ 
+      userId: userId, 
+      isRead: false 
+    });
     
     res.json({ success: true, unreadCount });
   } catch (error) {
@@ -168,7 +104,7 @@ const deleteNotification = async (req, res) => {
 
     const notification = await Notification.findOneAndDelete({
       _id: notificationId,
-      recipient: userId
+      userId: userId
     });
 
     if (!notification) {
@@ -231,24 +167,39 @@ const handleNotificationAction = async (req, res) => {
 // Send booking notification
 const sendBookingNotification = async (bookingId, type = 'BOOKING_CREATED') => {
   try {
+    console.log(`🔄 Sending booking notification for booking: ${bookingId}, type: ${type}`);
+    
     const booking = await Booking.findById(bookingId)
       .populate('service', 'title provider')
       .populate('user', 'name role')
       .populate('provider', 'name role');
 
+    console.log(`📋 Booking found:`, {
+      id: booking?._id,
+      service: booking?.service?.title,
+      user: booking?.user?.name,
+      provider: booking?.provider?.name,
+      hasService: !!booking?.service,
+      hasUser: !!booking?.user,
+      hasProvider: !!booking?.provider
+    });
+
     if (!booking) {
+      console.error('❌ [sendBookingNotification] Booking not found!');
       throw new Error('Booking not found');
     }
 
     switch (type) {
       case 'BOOKING_CREATED':
+        console.log('🔄 [sendBookingNotification] Creating notification for provider:', booking.provider?._id);
         // Notify provider
         await createNotification({
-          recipient: booking.provider._id,
-          sender: booking.user._id,
+          userId: booking.provider._id,
           title: 'New Booking Request',
           message: `${booking.user.name} has booked your service "${booking.service.title}" for ${new Date(booking.date).toLocaleDateString()}`,
           type,
+          relatedId: booking._id,
+          relatedModel: 'Booking',
           data: {
             bookingId: booking._id,
             serviceId: booking.service._id,
@@ -258,109 +209,127 @@ const sendBookingNotification = async (bookingId, type = 'BOOKING_CREATED') => {
           actions: [
             { label: 'View Booking', action: 'view_booking', style: 'primary' },
             { label: 'Contact Client', action: 'contact_client', style: 'secondary' }
-          ],
-          priority: 'high',
-          userRole: 'provider'
+          ]
         });
 
+        console.log('🔄 [sendBookingNotification] Creating notification for client:', booking.user?._id);
         // Notify client
         await createNotification({
-          recipient: booking.user._id,
-          sender: booking.provider._id,
+          userId: booking.user._id,
           title: 'Booking Confirmed',
           message: `Your booking for "${booking.service.title}" has been created successfully.`,
           type: 'BOOKING_CONFIRMED',
+          relatedId: booking._id,
+          relatedModel: 'Booking',
           data: {
             bookingId: booking._id,
             serviceId: booking.service._id,
             amount: booking.finalPrice || booking.totalAmount
-          },
-          priority: 'medium',
-          userRole: 'client'
+          }
         });
         break;
 
       case 'BOOKING_COMPLETED':
+        console.log('🔄 [sendBookingNotification] Creating completion notification for client:', booking.user?._id);
         await createNotification({
-          recipient: booking.user._id,
-          sender: booking.provider._id,
+          userId: booking.user._id,
           title: 'Service Completed',
           message: `Your service "${booking.service.title}" has been marked as completed.`,
           type,
+          relatedId: booking._id,
+          relatedModel: 'Booking',
           data: { bookingId: booking._id, serviceId: booking.service._id },
           hasActions: true,
           actions: [
             { label: 'Rate Service', action: 'rate_service', style: 'primary' },
             { label: 'Leave Review', action: 'leave_review', style: 'secondary' }
-          ],
-          priority: 'medium',
-          userRole: 'client'
+          ]
         });
         break;
     }
 
-    console.log(`✅ Booking notification sent for booking ${bookingId}`);
+    console.log('✅ [sendBookingNotification] Booking notification sent for booking', bookingId);
   } catch (error) {
-    console.error('Error sending booking notification:', error);
+    console.error('❌ [sendBookingNotification] Error sending booking notification:', error);
+    // Don't throw error to avoid breaking booking flow
   }
 };
 
 // Send negotiation notification
-const sendNegotiationNotification = async (negotiationId, type, senderId, recipientId) => {
+const sendNegotiationNotification = async (negotiationId, type, recipientId, senderId, userRole) => {
   try {
-    let title, message, actions = [], hasActions = false, userRole = 'client';
+    let title, message, hasActions = false, actions = [];
 
     switch (type) {
       case 'NEGOTIATION_STARTED':
         title = 'New Negotiation Started';
-        message = 'A client has started a negotiation for your service.';
-        hasActions = true;
-        userRole = 'provider';
-        actions = [
-          { label: 'View Negotiation', action: 'view_negotiation', style: 'primary' },
-          { label: 'Respond', action: 'respond', style: 'success' }
-        ];
-        break;
-
-      case 'COUNTER_OFFER_RECEIVED':
-        title = 'Counter Offer Received';
-        message = 'You have received a counter offer on your negotiation.';
+        message = 'A new price negotiation has been started for your service.';
         hasActions = true;
         actions = [
-          { label: 'Accept', action: 'accept_offer', style: 'success' },
-          { label: 'Counter', action: 'counter_offer', style: 'secondary' },
-          { label: 'Decline', action: 'decline_offer', style: 'danger' }
+          { label: 'View Offer', action: 'view_negotiation', style: 'primary' },
+          { label: 'Make Counter Offer', action: 'counter_offer', style: 'secondary' }
         ];
         break;
-
-      case 'OFFER_ACCEPTED':
-        title = 'Offer Accepted!';
-        message = 'Your negotiation offer has been accepted. You can now proceed to book the service.';
-        hasActions = true;
-        actions = [{ label: 'Book Now', action: 'book_service', style: 'primary' }];
+      case 'NEGOTIATION_ACCEPTED':
+        title = 'Offer Accepted';
+        message = 'Your negotiation offer has been accepted.';
         break;
-
-      case 'OFFER_DECLINED':
+      case 'NEGOTIATION_DECLINED':
         title = 'Offer Declined';
         message = 'Your negotiation offer has been declined.';
         break;
     }
 
-    await createNotification({
-      recipient: recipientId,
-      sender: senderId,
-      title,
-      message,
-      type,
-      data: { negotiationId },
-      hasActions,
-      actions,
-      priority: 'high',
-      userRole
+      await createNotification({
+        recipient: recipientId,
+        sender: senderId,
+        title,
+        message,
+        type,
+        data: { negotiationId },
+        hasActions,
+        actions,
+        priority: 'high',
+        userRole
+      });
+  
+    } catch (error) {
+      console.error('Error sending negotiation notification:', error);
+    }
+  };
+
+// Create test notification
+const createTestNotification = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const notification = await createNotification({
+      userId,
+      title: 'Test Notification',
+      message: 'This is a test notification to verify the system is working.',
+      type: 'TEST',
+      relatedId: null,
+      relatedModel: null,
+      data: { test: true },
+      hasActions: true,
+      actions: [
+        { label: 'Mark as Read', action: 'mark_read', style: 'primary' }
+      ],
+      isActionable: true
     });
 
+    res.status(201).json({ 
+      success: true, 
+      message: 'Test notification created',
+      notification 
+    });
   } catch (error) {
-    console.error('Error sending negotiation notification:', error);
+    console.error('Error creating test notification:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to create test notification',
+      error: error.message 
+    });
   }
 };
 
@@ -373,5 +342,6 @@ module.exports = {
   deleteNotification,
   handleNotificationAction,
   sendBookingNotification,
-  sendNegotiationNotification
+  sendNegotiationNotification,
+  createTestNotification
 };

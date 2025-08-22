@@ -25,6 +25,33 @@ const MyBookings = () => {
       const userBookings = await getUserBookings();
       console.log('📚 Received bookings:', userBookings);
       console.log('📊 Number of bookings:', userBookings.length);
+      
+      // Log details of each booking
+      userBookings.forEach((booking, index) => {
+        console.log(`📋 Booking ${index + 1}:`, {
+          id: booking._id,
+          service: booking.service,
+          serviceName: booking.service?.title,
+          serviceProvider: booking.service?.provider,
+          serviceProviderName: booking.service?.provider?.name,
+          provider: booking.provider,
+          date: booking.date,
+          status: booking.status
+        });
+        
+        // Deep dive into service structure
+        if (booking.service) {
+          console.log(`🔍 Service structure for booking ${index + 1}:`, {
+            serviceKeys: Object.keys(booking.service),
+            providerExists: !!booking.service.provider,
+            providerKeys: booking.service.provider ? Object.keys(booking.service.provider) : null,
+            providerName: booking.service.provider?.name,
+            providerEmail: booking.service.provider?.email,
+            fullProvider: booking.service.provider
+          });
+        }
+      });
+      
       setBookings(userBookings);
     } catch (error) {
       console.error('❌ Error fetching bookings:', error);
@@ -88,7 +115,9 @@ const MyBookings = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'Date not set';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid date';
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -354,13 +383,13 @@ const MyBookings = () => {
                       marginBottom: '0.5rem',
                       color: '#1f2937'
                     }}>
-                      {booking.service?.name || 'Service Name Not Available'}
+                      {booking.service?.title || 'Service Name Not Available'}
                     </h3>
                     <p style={{ color: '#6b7280', marginBottom: '0.5rem' }}>
                       <strong>Provider:</strong> {booking.service?.provider?.name || 'N/A'}
                     </p>
                     <p style={{ color: '#6b7280' }}>
-                      <strong>Date:</strong> {formatDate(booking.preferredDate)}
+                      <strong>Date:</strong> {formatDate(booking.date)}
                     </p>
                   </div>
                   
@@ -492,7 +521,7 @@ const MyBookings = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-                    {selectedBooking.service?.name || 'Service Name Not Available'}
+                    {selectedBooking.service?.title || 'Service Name Not Available'}
                   </h3>
                   <p style={{ color: '#6b7280' }}>
                     {selectedBooking.service?.description || 'No description available'}
@@ -518,7 +547,7 @@ const MyBookings = () => {
                   <div>
                     <strong>Preferred Date:</strong>
                     <br />
-                    {formatDate(selectedBooking.preferredDate)}
+                    {formatDate(selectedBooking.date)}
                   </div>
                   <div>
                     <strong>Price:</strong>

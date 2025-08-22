@@ -64,12 +64,12 @@ const notificationRoutes = require('./routes/notificationRoutes');
 console.log('🚀 Loading routes...');
 serviceRoutes(app);
 app.use('/api/auth', authRoutes);
-console.log('📋 Booking routes loaded');
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/negotiations', negotiationRoutes);
 app.use('/api/notifications', notificationRoutes);
+console.log('📋 Booking routes loaded');
 console.log('✅ All routes loaded successfully');
 
 // Add a simple test endpoint to verify the server is working
@@ -77,12 +77,16 @@ app.get('/test', (req, res) => {
     res.json({ success: true, message: 'Server is working!' });
 });
 
+// Add notification test endpoint directly in app.js
+app.get('/api/notifications/direct-test', (req, res) => {
+    console.log('📩 Direct notification test endpoint hit!');
+    res.json({ success: true, message: 'Direct notification endpoint working!', timestamp: new Date().toISOString() });
+});
+
 // Add a test endpoint specifically for booking routes
 app.post('/api/bookings/test-post', (req, res) => {
     res.json({ success: true, message: 'POST endpoint is working!' });
 });
-
-// app.use('/api/notifications', notificationRoutes);
 
 // Start the server
 app.listen(PORT, () => {

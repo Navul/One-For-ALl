@@ -23,9 +23,10 @@ const NotificationBell = ({ onUnreadCountChange }) => {
   const fetchUnreadCount = async () => {
     try {
       const response = await notificationService.getUnreadCount();
-      setUnreadCount(response.unreadCount);
+      setUnreadCount(response?.unreadCount || 0);
     } catch (error) {
       console.error('Error fetching unread count:', error);
+      setUnreadCount(0);
     }
   };
 
@@ -33,10 +34,15 @@ const NotificationBell = ({ onUnreadCountChange }) => {
     setLoading(true);
     try {
       const response = await notificationService.getUserNotifications();
-      setNotifications(response.notifications);
-      setUnreadCount(response.pagination.unreadCount);
+      const notificationsArray = Array.isArray(response) ? response : [];
+      setNotifications(notificationsArray);
+      // Count unread notifications from the response
+      const unreadCount = notificationsArray.filter(n => n && !n.isRead).length;
+      setUnreadCount(unreadCount);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      setNotifications([]); // Set empty array on error
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
@@ -122,8 +128,6 @@ const NotificationBell = ({ onUnreadCountChange }) => {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'NEGOTIATION_STARTED': return '🤝';
-      case 'COUNTER_OFFER_RECEIVED': return '💰';
       case 'OFFER_ACCEPTED': return '✅';
       case 'OFFER_DECLINED': return '❌';
       case 'NEGOTIATION_EXPIRED': return '⏰';
@@ -237,7 +241,7 @@ const NotificationBell = ({ onUnreadCountChange }) => {
               <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
                 Loading notifications...
               </div>
-            ) : notifications.length === 0 ? (
+            ) : (!notifications || notifications.length === 0) ? (
               <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
                 No notifications yet
               </div>

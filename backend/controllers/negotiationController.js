@@ -74,19 +74,7 @@ const startNegotiation = async (req, res) => {
 
         await negotiation.save();
         
-        // Create notification for provider
-        await createNotification({
-            recipient: service.provider._id,
-            sender: clientId,
-            type: 'NEGOTIATION_STARTED',
-            title: '🤝 New Price Negotiation!',
-            message: `Someone wants to negotiate the price for your "${service.title}" service. Offered: $${initialOffer}`,
-            data: {
-                serviceId: serviceId,
-                negotiationId: negotiation._id,
-                offerAmount: initialOffer
-            }
-        });
+        // Notification removed - no notification on negotiation start
         
         // Populate the negotiation for response
         const populatedNegotiation = await Negotiation.findById(negotiation._id)
@@ -171,20 +159,7 @@ const makeCounterOffer = async (req, res) => {
         negotiation.currentOffer = counterOffer;
         await negotiation.save();
 
-        // Create notification for the recipient
-        const recipientName = userId === negotiation.client._id.toString() ? negotiation.provider.name : negotiation.client.name;
-        await createNotification({
-            recipient: toUser,
-            sender: userId,
-            type: 'COUNTER_OFFER_RECEIVED',
-            title: '💰 Counter Offer Received!',
-            message: `${recipientName} made a counter offer of $${counterOffer} for "${negotiation.service.title}"`,
-            data: {
-                serviceId: negotiation.service._id,
-                negotiationId: negotiationId,
-                offerAmount: counterOffer
-            }
-        });
+        // Notification removed - no notification on counter offers
 
         // Populate for response
         const updatedNegotiation = await Negotiation.findById(negotiationId)

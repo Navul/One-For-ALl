@@ -17,7 +17,7 @@ const Notifications = () => {
     try {
       setLoading(true);
       const response = await notificationService.getUserNotifications();
-      setNotifications(response.notifications);
+      setNotifications(response); // response is now the array itself
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -93,9 +93,6 @@ const Notifications = () => {
       'BOOKING_CREATED': '📋',
       'BOOKING_CONFIRMED': '✅',
       'BOOKING_CANCELLED': '❌',
-      'NEGOTIATION_STARTED': '🤝',
-      'NEGOTIATION_UPDATED': '💰',
-      'COUNTER_OFFER_RECEIVED': '💵',
       'OFFER_ACCEPTED': '✅',
       'OFFER_DECLINED': '❌',
       'PAYMENT_RECEIVED': '💳',

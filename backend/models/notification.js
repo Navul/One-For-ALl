@@ -1,35 +1,10 @@
 const mongoose = require('mongoose');
 
+
 const notificationSchema = new mongoose.Schema({
-  recipient: {
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
-  },
-  sender: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  type: {
-    type: String,
-    enum: [
-      'NEGOTIATION_STARTED',
-      'COUNTER_OFFER_RECEIVED', 
-      'OFFER_ACCEPTED',
-      'OFFER_DECLINED',
-      'NEGOTIATION_EXPIRED',
-      'BOOKING_CREATED',
-      'SERVICE_BOOKED',
-      'BOOKING_CONFIRMED',
-      'BOOKING_CANCELLED',
-      'BOOKING_COMPLETED',
-      'SERVICE_UPDATE',
-      'PAYMENT_SUCCESS',
-      'PAYMENT_FAILED',
-      'SYSTEM_UPDATE',
-      'PROVIDER_RESPONSE'
-    ],
     required: true
   },
   title: {
@@ -40,25 +15,46 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  data: {
-    serviceId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Service'
-    },
-    negotiationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Negotiation'
-    },
-    bookingId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Booking'
-    },
-    amount: Number,
-    offerAmount: Number,
-    originalPrice: Number,
-    finalPrice: Number
+  type: {
+    type: String,
+    enum: [
+      'session',
+      'meal_plan',
+      'achievement',
+      'booking_confirmation',
+      'booking_request',
+      'payment_success',
+      'payment_failed',
+      'BOOKING_CREATED',
+      'BOOKING_CONFIRMED',
+      'BOOKING_COMPLETED',
+      'BOOKING_CANCELLED',
+      'OFFER_ACCEPTED',
+      'OFFER_DECLINED',
+      'NEGOTIATION_EXPIRED',
+      'SERVICE_BOOKED',
+      'SERVICE_UPDATE',
+      'SYSTEM_UPDATE',
+      'PROVIDER_RESPONSE'
+    ],
+    required: true
   },
-  // Action-related fields for interactive notifications
+  relatedId: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: 'relatedModel',
+  },
+  relatedModel: {
+    type: String,
+    enum: ['Program', 'MealPlan', 'Booking', 'Service', 'Negotiation'],
+  },
+  data: {
+    type: Object,
+    default: {}
+  },
+  isRead: {
+    type: Boolean,
+    default: false
+  },
   hasActions: {
     type: Boolean,
     default: false
@@ -66,37 +62,17 @@ const notificationSchema = new mongoose.Schema({
   actions: [{
     label: String,
     action: String,
-    style: String, // 'primary', 'secondary', 'danger', 'success'
+    style: String
   }],
   isActionable: {
     type: Boolean,
     default: true
   },
-  // Priority level
-  priority: {
-    type: String,
-    enum: ['low', 'medium', 'high', 'urgent'],
-    default: 'medium'
-  },
-  // User role for role-based filtering
-  userRole: {
-    type: String,
-    enum: ['client', 'provider', 'admin'],
-    required: true
-  },
-  isRead: {
-    type: Boolean,
-    default: false
-  },
-  readAt: {
-    type: Date
-  }
 }, {
   timestamps: true
 });
 
-// Index for efficient queries
-notificationSchema.index({ recipient: 1, createdAt: -1 });
-notificationSchema.index({ recipient: 1, isRead: 1 });
+notificationSchema.index({ userId: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, isRead: 1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

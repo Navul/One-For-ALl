@@ -132,8 +132,6 @@ const ProviderNotifications = () => {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'NEGOTIATION_STARTED': return '🤝';
-      case 'COUNTER_OFFER_RECEIVED': return '💰';
       case 'OFFER_ACCEPTED': return '✅';
       case 'OFFER_DECLINED': return '❌';
       case 'NEGOTIATION_EXPIRED': return '⏰';
