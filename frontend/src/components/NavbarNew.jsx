@@ -8,7 +8,7 @@ const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { isAuthenticated, user, logout } = useAuth();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
@@ -20,21 +20,34 @@ const Navbar = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (isDropdownOpen && !event.target.closest('.hamburger-dropdown')) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isDropdownOpen]);
+
     const handleLogout = async () => {
         try {
             await logout();
             navigate('/');
+            setIsDropdownOpen(false);
         } catch (error) {
             console.error('Logout failed:', error);
         }
     };
 
-    const toggleMenu = () => {
-        setIsMenuOpen(!isMenuOpen);
+    const toggleDropdown = () => {
+        setIsDropdownOpen(!isDropdownOpen);
     };
 
     const closeMenu = () => {
-        setIsMenuOpen(false);
+        setIsDropdownOpen(false);
     };
 
     const getDashboardLink = () => {
@@ -48,344 +61,300 @@ const Navbar = () => {
         return '/dashboard';
     };
 
+    const getHomeLink = () => {
+        // If user is authenticated, show role-based homepage
+        if (isAuthenticated && user) {
+            if (user.role === 'provider') {
+                return '/provider-home'; // Provider's role-based home page
+            } else if (user.role === 'customer' || user.role === 'user') {
+                return '/customer-home'; // Customer's role-based home page
+            } else if (user.role === 'admin') {
+                return '/admin-home'; // Admin's role-based home page
+            }
+        }
+        // For non-authenticated users, show the landing page
+        return '/';
+    };
+
     return (
         <>
             <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
                 <div className="navbar-container">
-                    <Link to="/" className="navbar-logo" onClick={closeMenu}>
+                    {/* Logo */}
+                    <Link to={getHomeLink()} className="navbar-logo" onClick={closeMenu}>
                         <span className="logo-text">OneForAll</span>
                     </Link>
 
+                    {/* Main Navigation - Only Home and Negotiations */}
                     <div className="navbar-menu">
                         <div className="navbar-nav">
                             <Link 
-                                to="/" 
-                                className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
+                                to={getHomeLink()} 
+                                className={`nav-link ${
+                                    (location.pathname === '/' && !isAuthenticated) ||
+                                    (isAuthenticated && location.pathname === getHomeLink()) 
+                                    ? 'active' : ''
+                                }`}
+                                onClick={closeMenu}
                             >
                                 Home
                             </Link>
                             
-                            {/* Only show Services link to customers and non-logged users */}
-                            {(!isAuthenticated || user?.role === 'customer' || user?.role === 'user') && (
-                                <Link 
-                                    to="/browse-services" 
-                                    className={`nav-link ${location.pathname === '/browse-services' ? 'active' : ''}`}
-                                >
-                                    Services
-                                </Link>
-                            )}
-
-                            {/* Show My Bookings link for customers/users */}
-                            {isAuthenticated && (user?.role === 'customer' || user?.role === 'user') && (
-                                <Link 
-                                    to="/my-bookings" 
-                                    className={`nav-link ${location.pathname === '/my-bookings' ? 'active' : ''}`}
-                                >
-                                    My Bookings
-                                </Link>
-                            )}
-
-                            {/* Show My Services link for providers */}
-                            {isAuthenticated && user?.role === 'provider' && (
-                                <Link 
-                                    to="/my-services" 
-                                    className={`nav-link ${location.pathname === '/my-services' ? 'active' : ''}`}
-                                >
-                                    My Services
-                                </Link>
-                            )}
-
-                            {/* Show Negotiations link for all authenticated users */}
+                            {/* Show Negotiations for authenticated users */}
                             {isAuthenticated && (
                                 <Link 
                                     to="/negotiations" 
                                     className={`nav-link negotiations-link ${location.pathname === '/negotiations' ? 'active' : ''}`}
+                                    onClick={closeMenu}
                                 >
                                     Negotiations
                                     <NegotiationsBadge />
                                 </Link>
                             )}
-
-                            {/* Show Notifications link for all authenticated users */}
-                            {isAuthenticated && (
-                                <Link 
-                                    to="/notifications" 
-                                    className={`nav-link ${location.pathname === '/notifications' ? 'active' : ''}`}
-                                >
-                                    Notifications
-                                </Link>
-                            )}
-
-                            {isAuthenticated && (
-                                <Link 
-                                    to="/instant-services" 
-                                    className={`nav-link instant-service ${location.pathname === '/instant-services' ? 'active' : ''}`}
-                                >
-                                    <span className="instant-icon">⚡</span>
-                                    Instant Services
-                                </Link>
-                            )}
-
-                            {isAuthenticated && (
-                                <Link 
-                                    to={getDashboardLink()} 
-                                    className={`nav-link ${
-                                        location.pathname.includes('dashboard') || 
-                                        location.pathname.includes('/admin-dashboard') ||
-                                        location.pathname.includes('/provider-dashboard') ||
-                                        location.pathname.includes('/user-dashboard') 
-                                        ? 'active' : ''
-                                    }`}
-                                >
-                                    Dashboard
-                                </Link>
-                            )}
                         </div>
 
+                        {/* Right side - Notification Bell + Hamburger Menu */}
                         <div className="navbar-actions">
-                            {isAuthenticated ? (
-                                <div className="user-menu">
-                                    <NotificationBell />
-                                    <div className="user-info">
-                                        <div className="user-avatar">
-                                            {user?.name?.charAt(0).toUpperCase() || 'U'}
-                                        </div>
-                                        <span className="user-name">{user?.name}</span>
-                                    </div>
-                                    <button 
-                                        onClick={handleLogout}
-                                        className="logout-btn"
-                                    >
-                                        Logout
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="auth-buttons">
-                                    <Link to="/login" className="btn btn-outline">
-                                        Login
-                                    </Link>
-                                    <Link to="/signup" className="btn btn-primary">
-                                        Sign Up
-                                    </Link>
-                                    <Link to="/contact" className="btn btn-contact">
-                                        <span className="contact-icon">📞</span>
-                                        Contact
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <button 
-                        className={`mobile-menu-btn ${isMenuOpen ? 'active' : ''}`}
-                        onClick={toggleMenu}
-                    >
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </button>
-                </div>
-
-                <div className={`mobile-menu ${isMenuOpen ? 'active' : ''}`}>
-                    <div className="mobile-menu-content">
-                        <Link 
-                            to="/" 
-                            className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}
-                            onClick={closeMenu}
-                        >
-                            Home
-                        </Link>
-                        
-                        {/* Only show Services link to customers and non-logged users */}
-                        {(!isAuthenticated || user?.role === 'customer' || user?.role === 'user') && (
-                            <Link 
-                                to="/browse-services" 
-                                className={`mobile-nav-link ${location.pathname === '/browse-services' ? 'active' : ''}`}
-                                onClick={closeMenu}
-                            >
-                                Services
-                            </Link>
-                        )}
-
-                        {/* Show My Bookings link for customers/users */}
-                        {isAuthenticated && (user?.role === 'customer' || user?.role === 'user') && (
-                            <Link 
-                                to="/my-bookings" 
-                                className={`mobile-nav-link ${location.pathname === '/my-bookings' ? 'active' : ''}`}
-                                onClick={closeMenu}
-                            >
-                                My Bookings
-                            </Link>
-                        )}
-
-                        {/* Show My Services link for providers */}
-                        {isAuthenticated && user?.role === 'provider' && (
-                            <Link 
-                                to="/provider-dashboard" 
-                                className={`mobile-nav-link ${location.pathname === '/provider-dashboard' ? 'active' : ''}`}
-                                onClick={closeMenu}
-                            >
-                                My Services
-                            </Link>
-                        )}
-
-                        {isAuthenticated && (
-                            <Link 
-                                to="/instant-services" 
-                                className={`mobile-nav-link instant-service ${location.pathname === '/instant-services' ? 'active' : ''}`}
-                                onClick={closeMenu}
-                            >
-                                <span className="instant-icon">⚡</span>
-                                Instant Services
-                            </Link>
-                        )}
-
-                        {/* Show Negotiations link for all authenticated users */}
-                        {isAuthenticated && (
-                            <Link 
-                                to="/negotiations" 
-                                className={`mobile-nav-link negotiations-link ${location.pathname === '/negotiations' ? 'active' : ''}`}
-                                onClick={closeMenu}
-                            >
-                                Negotiations
-                                <NegotiationsBadge />
-                            </Link>
-                        )}
-
-                        {/* Show Notifications link for all authenticated users */}
-                        {isAuthenticated && (
-                            <Link 
-                                to="/notifications" 
-                                className={`mobile-nav-link ${location.pathname === '/notifications' ? 'active' : ''}`}
-                                onClick={closeMenu}
-                            >
-                                Notifications
-                            </Link>
-                        )}
-
-                        {isAuthenticated && (
-                            <Link 
-                                to={getDashboardLink()} 
-                                className={`mobile-nav-link ${
-                                    location.pathname.includes('dashboard') || 
-                                    location.pathname.includes('/admin-dashboard') ||
-                                    location.pathname.includes('/provider-dashboard') ||
-                                    location.pathname.includes('/user-dashboard') 
-                                    ? 'active' : ''
-                                }`}
-                                onClick={closeMenu}
-                            >
-                                Dashboard
-                            </Link>
-                        )}
-
-                        <div className="mobile-auth">
-                            {isAuthenticated ? (
+                            {isAuthenticated && <NotificationBell />}
+                            
+                            {/* Hamburger Dropdown */}
+                            <div className="hamburger-dropdown">
                                 <button 
-                                    onClick={handleLogout}
-                                    className="mobile-logout-btn"
+                                    className={`hamburger-btn ${isDropdownOpen ? 'active' : ''}`}
+                                    onClick={toggleDropdown}
+                                    aria-label="Menu"
                                 >
-                                    Logout
+                                    <span className="hamburger-line"></span>
+                                    <span className="hamburger-line"></span>
+                                    <span className="hamburger-line"></span>
                                 </button>
-                            ) : (
-                                <div className="mobile-auth-buttons">
-                                    <Link 
-                                        to="/login" 
-                                        className="mobile-btn mobile-btn-outline"
-                                        onClick={closeMenu}
-                                    >
-                                        Login
-                                    </Link>
-                                    <Link 
-                                        to="/signup" 
-                                        className="mobile-btn mobile-btn-primary"
-                                        onClick={closeMenu}
-                                    >
-                                        Sign Up
-                                    </Link>
-                                    <Link 
-                                        to="/contact" 
-                                        className="mobile-btn mobile-btn-contact"
-                                        onClick={closeMenu}
-                                    >
-                                        Contact
-                                    </Link>
-                                </div>
-                            )}
+
+                                {/* Dropdown Menu */}
+                                {isDropdownOpen && (
+                                    <div className="dropdown-menu">
+                                        {isAuthenticated ? (
+                                            <>
+                                                {/* User Info */}
+                                                <div className="dropdown-user-info">
+                                                    <div className="user-avatar">
+                                                        {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                                    </div>
+                                                    <div className="user-details">
+                                                        <span className="user-name">{user?.name}</span>
+                                                        <span className="user-role">{user?.role}</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="dropdown-divider"></div>
+
+                                                {/* Navigation Links */}
+                                                {(!isAuthenticated || user?.role === 'customer' || user?.role === 'user') && (
+                                                    <Link 
+                                                        to="/browse-services" 
+                                                        className={`dropdown-item ${location.pathname === '/browse-services' ? 'active' : ''}`}
+                                                        onClick={closeMenu}
+                                                    >
+                                                        <span className="item-icon">🔍</span>
+                                                        Services
+                                                    </Link>
+                                                )}
+
+                                                {(user?.role === 'customer' || user?.role === 'user') && (
+                                                    <Link 
+                                                        to="/my-bookings" 
+                                                        className={`dropdown-item ${location.pathname === '/my-bookings' ? 'active' : ''}`}
+                                                        onClick={closeMenu}
+                                                    >
+                                                        <span className="item-icon">📅</span>
+                                                        My Bookings
+                                                    </Link>
+                                                )}
+
+                                                {user?.role === 'provider' && (
+                                                    <>
+                                                        <Link 
+                                                            to="/my-services" 
+                                                            className={`dropdown-item ${location.pathname === '/my-services' ? 'active' : ''}`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            <span className="item-icon">⚙️</span>
+                                                            My Services
+                                                        </Link>
+                                                        <Link 
+                                                            to="/booked-programs" 
+                                                            className={`dropdown-item ${location.pathname === '/booked-programs' ? 'active' : ''}`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            <span className="item-icon">📋</span>
+                                                            Booked Programs
+                                                        </Link>
+                                                    </>
+                                                )}
+
+                                                <Link 
+                                                    to="/notifications" 
+                                                    className={`dropdown-item ${location.pathname === '/notifications' ? 'active' : ''}`}
+                                                    onClick={closeMenu}
+                                                >
+                                                    <span className="item-icon">🔔</span>
+                                                    Notifications
+                                                </Link>
+
+                                                <Link 
+                                                    to="/instant-services" 
+                                                    className={`dropdown-item ${location.pathname === '/instant-services' ? 'active' : ''}`}
+                                                    onClick={closeMenu}
+                                                >
+                                                    <span className="item-icon">⚡</span>
+                                                    Instant Services
+                                                </Link>
+
+                                                <Link 
+                                                    to={getDashboardLink()} 
+                                                    className={`dropdown-item ${
+                                                        location.pathname.includes('dashboard') ? 'active' : ''
+                                                    }`}
+                                                    onClick={closeMenu}
+                                                >
+                                                    <span className="item-icon">📊</span>
+                                                    Dashboard
+                                                </Link>
+
+                                                <div className="dropdown-divider"></div>
+                                                
+                                                <button 
+                                                    onClick={handleLogout}
+                                                    className="dropdown-item logout-item"
+                                                >
+                                                    <span className="item-icon">🚪</span>
+                                                    Logout
+                                                </button>
+                                            </>
+                                        ) : (
+                                            /* Not authenticated - show auth options and services */
+                                            <>
+                                                <Link 
+                                                    to="/browse-services" 
+                                                    className={`dropdown-item ${location.pathname === '/browse-services' ? 'active' : ''}`}
+                                                    onClick={closeMenu}
+                                                >
+                                                    <span className="item-icon">🔍</span>
+                                                    Services
+                                                </Link>
+                                                
+                                                <div className="dropdown-divider"></div>
+                                                
+                                                <Link 
+                                                    to="/login" 
+                                                    className="dropdown-item"
+                                                    onClick={closeMenu}
+                                                >
+                                                    <span className="item-icon">🔑</span>
+                                                    Login
+                                                </Link>
+                                                <Link 
+                                                    to="/signup" 
+                                                    className="dropdown-item"
+                                                    onClick={closeMenu}
+                                                >
+                                                    <span className="item-icon">✨</span>
+                                                    Sign Up
+                                                </Link>
+                                                <Link 
+                                                    to="/contact" 
+                                                    className="dropdown-item"
+                                                    onClick={closeMenu}
+                                                >
+                                                    <span className="item-icon">📞</span>
+                                                    Contact
+                                                </Link>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
             </nav>
-
+            
+            {/* Styles */}
             <style jsx>{`
                 .navbar {
-                    position: fixed !important;
-                    top: 0 !important;
-                    left: 0 !important;
-                    right: 0 !important;
-                    z-index: 1000 !important;
-                    background: #1e3a8a !important;
-                    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
-                    backdrop-filter: blur(20px);
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    z-index: 1000;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
                     transition: all 0.3s ease;
-                    box-shadow: 0 4px 20px rgba(30, 58, 138, 0.3);
+                    backdrop-filter: blur(10px);
+                    padding: 0;
                 }
 
                 .navbar.scrolled {
-                    background: #1e3a8a !important;
-                    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
-                    box-shadow: 0 8px 32px rgba(30, 58, 138, 0.4);
+                    background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+                    backdrop-filter: blur(20px);
+                    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
                 }
 
                 .navbar-container {
                     max-width: 1200px;
                     margin: 0 auto;
-                    padding: 1rem 2rem;
+                    padding: 0 2rem;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
+                    height: 70px;
                 }
 
                 .navbar-logo {
+                    font-size: 1.5rem;
+                    font-weight: bold;
+                    color: white;
                     text-decoration: none;
-                    font-size: 1.75rem;
-                    font-weight: 800;
-                    color: white !important;
-                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                    z-index: 1001;
                 }
 
                 .navbar-menu {
                     display: flex;
                     align-items: center;
-                    gap: 2rem;
+                    justify-content: space-between;
+                    width: 100%;
+                    margin-left: 2rem;
                 }
 
                 .navbar-nav {
                     display: flex;
                     align-items: center;
-                    gap: 1.5rem;
+                    gap: 2rem;
                 }
 
                 .nav-link {
+                    color: white;
                     text-decoration: none;
-                    color: white !important;
-                    font-weight: 500;
                     padding: 0.5rem 1rem;
                     border-radius: 8px;
                     transition: all 0.3s ease;
+                    font-weight: 500;
                     position: relative;
                 }
 
                 .nav-link:hover {
-                    color: #a5d8ff !important;
                     background: rgba(255, 255, 255, 0.1);
                     transform: translateY(-1px);
                 }
 
                 .nav-link.active {
-                    color: #a5d8ff !important;
-                    background: rgba(255, 255, 255, 0.15);
+                    background: rgba(255, 255, 255, 0.2);
+                    font-weight: 600;
+                }
+
+                .negotiations-link {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
                 }
 
                 .navbar-actions {
@@ -394,21 +363,90 @@ const Navbar = () => {
                     gap: 1rem;
                 }
 
-                .user-menu {
+                /* Hamburger Dropdown Styles */
+                .hamburger-dropdown {
+                    position: relative;
                     display: flex;
                     align-items: center;
-                    gap: 1rem;
                 }
 
-                .user-info {
+                .hamburger-btn {
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    padding: 0.5rem;
+                    border-radius: 8px;
+                    transition: all 0.3s ease;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 3px;
+                    width: 30px;
+                    height: 30px;
+                    justify-content: center;
+                    align-items: center;
+                }
+
+                .hamburger-btn:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+
+                .hamburger-line {
+                    width: 20px;
+                    height: 2px;
+                    background: white;
+                    border-radius: 2px;
+                    transition: all 0.3s ease;
+                    transform-origin: center;
+                }
+
+                .hamburger-btn.active .hamburger-line:nth-child(1) {
+                    transform: rotate(45deg) translate(4px, 4px);
+                }
+
+                .hamburger-btn.active .hamburger-line:nth-child(2) {
+                    opacity: 0;
+                }
+
+                .hamburger-btn.active .hamburger-line:nth-child(3) {
+                    transform: rotate(-45deg) translate(4px, -4px);
+                }
+
+                .dropdown-menu {
+                    position: absolute;
+                    top: 100%;
+                    right: 0;
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+                    min-width: 280px;
+                    padding: 1rem 0;
+                    z-index: 1000;
+                    margin-top: 0.5rem;
+                    border: 1px solid rgba(0, 0, 0, 0.05);
+                    animation: dropdownSlideIn 0.2s ease-out;
+                }
+
+                @keyframes dropdownSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                .dropdown-user-info {
+                    padding: 1rem 1.5rem;
                     display: flex;
                     align-items: center;
-                    gap: 0.5rem;
+                    gap: 0.75rem;
                 }
 
                 .user-avatar {
-                    width: 36px;
-                    height: 36px;
+                    width: 40px;
+                    height: 40px;
                     border-radius: 50%;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     display: flex;
@@ -416,302 +454,96 @@ const Navbar = () => {
                     justify-content: center;
                     color: white;
                     font-weight: 600;
-                    font-size: 0.875rem;
-                }
-
-                .user-name {
-                    font-weight: 500;
-                    color: white !important;
-                }
-
-                .logout-btn {
-                    background: rgba(255, 255, 255, 0.1);
-                    border: 2px solid rgba(255, 255, 255, 0.3);
-                    color: white;
-                    padding: 0.5rem 1rem;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-weight: 500;
-                    transition: all 0.3s ease;
-                }
-
-                .logout-btn:hover {
-                    background: rgba(255, 255, 255, 0.2);
-                    border-color: rgba(255, 255, 255, 0.5);
-                    transform: translateY(-1px);
-                }
-
-                .auth-buttons {
-                    display: flex;
-                    gap: 0.75rem;
-                }
-
-                .btn {
-                    text-decoration: none;
-                    padding: 0.5rem 1rem;
-                    border-radius: 8px;
-                    font-weight: 500;
-                    transition: all 0.3s ease;
-                    border: 2px solid transparent;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                }
-
-                .btn-outline {
-                    background: transparent;
-                    color: white;
-                    border-color: rgba(255, 255, 255, 0.3);
-                }
-
-                .btn-outline:hover {
-                    background: rgba(255, 255, 255, 0.1);
-                    border-color: rgba(255, 255, 255, 0.5);
-                    transform: translateY(-1px);
-                }
-
-                .btn-primary {
-                    background: rgba(255, 255, 255, 0.1);
-                    color: white;
-                    border-color: rgba(255, 255, 255, 0.3);
-                }
-
-                .btn-primary:hover {
-                    background: rgba(255, 255, 255, 0.2);
-                    border-color: rgba(255, 255, 255, 0.5);
-                    transform: translateY(-1px);
-                }
-
-                .btn-contact {
-                    background: #a5d8ff;
-                    color: #1e3a8a;
-                    border-color: #a5d8ff;
-                    font-weight: 600;
-                }
-
-                .btn-contact:hover {
-                    background: #91c7f7;
-                    border-color: #91c7f7;
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(165, 216, 255, 0.3);
-                }
-
-                .contact-icon {
                     font-size: 1rem;
                 }
 
-                .mobile-menu-btn {
-                    display: none;
-                    flex-direction: column;
-                    justify-content: space-around;
-                    width: 24px;
-                    height: 20px;
-                    background: transparent;
-                    border: none;
-                    cursor: pointer;
-                    padding: 0;
-                }
-
-                .mobile-menu-btn span {
-                    width: 100%;
-                    height: 2px;
-                    background: white;
-                    transition: all 0.3s ease;
-                    transform-origin: center;
-                }
-
-                .mobile-menu-btn.active span:nth-child(1) {
-                    transform: rotate(45deg) translate(5px, 5px);
-                }
-
-                .mobile-menu-btn.active span:nth-child(2) {
-                    opacity: 0;
-                }
-
-                .mobile-menu-btn.active span:nth-child(3) {
-                    transform: rotate(-45deg) translate(7px, -6px);
-                }
-
-                .mobile-menu {
-                    display: none;
-                    position: absolute;
-                    top: 100%;
-                    left: 0;
-                    right: 0;
-                    background: #1e3a8a !important;
-                    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
-                    box-shadow: 0 8px 32px rgba(30, 58, 138, 0.3);
-                    border-top: 1px solid rgba(255, 255, 255, 0.1);
-                }
-
-                .mobile-menu.active {
-                    display: block;
-                }
-
-                .mobile-menu-content {
-                    padding: 2rem;
-                }
-
-                .mobile-nav-link {
-                    display: block;
-                    text-decoration: none;
-                    color: white !important;
-                    font-weight: 500;
-                    padding: 1rem 0;
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                    transition: color 0.3s ease;
-                }
-
-                .mobile-nav-link:hover,
-                .mobile-nav-link.active {
-                    color: #a5d8ff !important;
-                }
-
-                .mobile-auth {
-                    padding-top: 1rem;
-                    border-top: 2px solid rgba(255, 255, 255, 0.1);
-                    margin-top: 1rem;
-                }
-
-                .mobile-logout-btn {
-                    width: 100%;
-                    background: #a5d8ff;
-                    color: #1e3a8a;
-                    border: none;
-                    padding: 0.75rem;
-                    border-radius: 8px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: background 0.3s ease;
-                }
-
-                .mobile-logout-btn:hover {
-                    background: #91c7f7;
-                }
-
-                .mobile-auth-buttons {
+                .user-details {
                     display: flex;
                     flex-direction: column;
+                }
+
+                .user-name {
+                    font-weight: 600;
+                    color: #1f2937 !important;
+                    margin: 0;
+                }
+
+                .user-role {
+                    font-size: 0.875rem;
+                    color: #6b7280;
+                    text-transform: capitalize;
+                }
+
+                .dropdown-divider {
+                    height: 1px;
+                    background: #f3f4f6;
+                    margin: 0.5rem 0;
+                }
+
+                .dropdown-item {
+                    display: flex;
+                    align-items: center;
                     gap: 0.75rem;
-                }
-
-                .mobile-btn {
-                    display: block;
-                    text-align: center;
-                    text-decoration: none;
                     padding: 0.75rem 1.5rem;
-                    border-radius: 8px;
+                    color: #374151;
+                    text-decoration: none;
+                    transition: all 0.2s ease;
+                    border: none;
+                    background: none;
+                    width: 100%;
+                    text-align: left;
+                    cursor: pointer;
+                    font-size: 0.925rem;
+                }
+
+                .dropdown-item:hover {
+                    background: #f9fafb;
+                    color: #4f46e5;
+                }
+
+                .dropdown-item.active {
+                    background: #eef2ff;
+                    color: #4f46e5;
                     font-weight: 500;
-                    transition: all 0.3s ease;
                 }
 
-                .mobile-btn-outline {
-                    background: transparent;
-                    color: white;
-                    border: 2px solid rgba(255, 255, 255, 0.3);
+                .dropdown-item.logout-item {
+                    color: #dc2626;
+                    border-top: 1px solid #f3f4f6;
+                    margin-top: 0.5rem;
+                    padding-top: 1rem;
                 }
 
-                .mobile-btn-outline:hover {
-                    background: rgba(255, 255, 255, 0.1);
-                    color: white;
+                .dropdown-item.logout-item:hover {
+                    background: #fef2f2;
+                    color: #dc2626;
                 }
 
-                .mobile-btn-primary {
-                    background: #a5d8ff;
-                    color: #1e3a8a;
-                    border: 2px solid #a5d8ff;
+                .item-icon {
+                    font-size: 1rem;
+                    width: 20px;
+                    text-align: center;
                 }
 
-                .mobile-btn-primary:hover {
-                    background: #91c7f7;
-                    border-color: #91c7f7;
-                }
-
-                .mobile-btn-contact {
-                    background: #a5d8ff;
-                    color: #1e3a8a;
-                    border: 2px solid #a5d8ff;
-                }
-
-                .mobile-btn-contact:hover {
-                    background: #91c7f7;
-                    border-color: #91c7f7;
-                }
-
+                /* Responsive */
                 @media (max-width: 768px) {
-                    .navbar-menu {
-                        display: none;
+                    .navbar-container {
+                        padding: 0 1rem;
                     }
 
-                    .mobile-menu-btn {
-                        display: flex;
+                    .navbar-nav {
+                        gap: 1rem;
                     }
-                }
 
-                /* Instant Service Link Styles */
-                .instant-service {
-                    position: relative;
-                    background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
-                    color: white !important;
-                    border-radius: 20px;
-                    padding: 8px 16px !important;
-                    margin: 0 8px;
-                    font-weight: 600;
-                    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
-                    transition: all 0.3s ease;
-                }
-
-                .instant-service:hover {
-                    background: linear-gradient(135deg, #ff3742 0%, #e73c3c 100%);
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
-                }
-
-                .instant-service.active {
-                    background: linear-gradient(135deg, #e73c3c 0%, #c0392b 100%);
-                    box-shadow: 0 4px 15px rgba(231, 60, 60, 0.5);
-                }
-
-                .instant-icon {
-                    font-size: 1.1em;
-                    margin-right: 6px;
-                    animation: pulse 2s infinite;
-                }
-
-                @keyframes pulse {
-                    0%, 100% {
-                        opacity: 1;
-                        transform: scale(1);
+                    .nav-link {
+                        padding: 0.4rem 0.8rem;
+                        font-size: 0.9rem;
                     }
-                    50% {
-                        opacity: 0.8;
-                        transform: scale(1.1);
+
+                    .dropdown-menu {
+                        min-width: 260px;
+                        right: -1rem;
                     }
-                }
-
-                /* Mobile instant service styles */
-                .mobile-nav-link.instant-service {
-                    background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
-                    color: white;
-                    border-radius: 8px;
-                    padding: 12px 16px;
-                    margin: 8px 0;
-                    font-weight: 600;
-                    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
-                }
-
-                .mobile-nav-link.instant-service:hover {
-                    background: linear-gradient(135deg, #ff3742 0%, #e73c3c 100%);
-                    color: white;
-                }
-
-                /* Negotiations link with badge positioning */
-                .negotiations-link {
-                    position: relative;
-                }
-
-                .mobile-nav-link.negotiations-link {
-                    position: relative;
                 }
             `}</style>
         </>

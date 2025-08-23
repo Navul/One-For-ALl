@@ -2,6 +2,9 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Home from './pages/Home';
+import ProviderHome from './pages/ProviderHome';
+import CustomerHome from './pages/CustomerHome';
+import AdminHome from './pages/AdminHome';
 import BrowseServices from './pages/BrowseServices';
 import InstantServices from './pages/InstantServices';
 import ServiceDetails from './pages/ServiceDetails';
@@ -9,6 +12,7 @@ import NegotiationsDashboard from './pages/NegotiationsDashboard';
 import Notifications from './pages/Notifications';
 import NotificationTest from './pages/NotificationTest';
 import MyBookings from './pages/MyBookings';
+import BookedPrograms from './pages/BookedPrograms';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import UserDashboard from './pages/UserDashboard';
@@ -33,6 +37,33 @@ const App = () => {
                     <Route path="/" element={<Home />} />
                     <Route path="/browse-services" element={<BrowseServices />} />
                     <Route path="/service/:serviceId" element={<ServiceDetails />} />
+                    
+                    {/* Role-based home pages */}
+                    <Route 
+                        path="/provider-home" 
+                        element={
+                            <ProtectedRoute allowedRoles={['provider']}>
+                                <ProviderHome />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route 
+                        path="/customer-home" 
+                        element={
+                            <ProtectedRoute allowedRoles={['user', 'customer']}>
+                                <CustomerHome />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route 
+                        path="/admin-home" 
+                        element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                                <AdminHome />
+                            </ProtectedRoute>
+                        }
+                    />
+                    
                     <Route 
                         path="/instant-services" 
                         element={
@@ -88,6 +119,16 @@ const App = () => {
                         element={
                             <ProtectedRoute allowedRoles={['provider']}>
                                 <MyServices />
+                            </ProtectedRoute>
+                        }
+                    />
+                    
+                    {/* Booked Programs route for providers */}
+                    <Route 
+                        path="/booked-programs" 
+                        element={
+                            <ProtectedRoute allowedRoles={['provider']}>
+                                <BookedPrograms />
                             </ProtectedRoute>
                         }
                     />

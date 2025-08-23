@@ -307,6 +307,70 @@ exports.getProviderBookings = async (req, res) => {
     }
 };
 
+// Get detailed bookings for a provider (for BookedPrograms page)
+exports.getProviderBookingsDetailed = async (req, res) => {
+    console.log('🚀 === PROVIDER BOOKINGS DETAILED ENDPOINT HIT ===');
+    console.log('👤 Request from user:', req.user?._id);
+    console.log('🔑 Auth header present:', !!req.headers.authorization);
+    console.log('📅 Timestamp:', new Date().toISOString());
+    
+    try {
+        console.log('🔍 Getting detailed provider bookings for user:', req.user._id);
+        
+        // First, find all services created by this provider
+        const providerServices = await Service.find({ provider: req.user._id });
+        const serviceIds = providerServices.map(service => service._id);
+        
+        console.log('📋 Found', providerServices.length, 'services for provider');
+        console.log('🔗 Service IDs:', serviceIds);
+        
+        // Then find all bookings for those services with detailed population
+        const bookings = await Booking.find({ 
+            service: { $in: serviceIds } 
+        })
+        .populate({
+            path: 'service',
+            select: 'title description price category location provider',
+            populate: {
+                path: 'provider',
+                select: 'name email'
+            }
+        })
+        .populate({
+            path: 'user',
+            select: 'name email phone'
+        })
+        .sort({ createdAt: -1 });
+        
+        console.log('📚 Found', bookings.length, 'total bookings for provider');
+        
+        // Log each booking for debugging
+        bookings.forEach((booking, index) => {
+            console.log(`📋 Booking ${index + 1}:`, {
+                id: booking._id,
+                service: booking.service?.title,
+                client: booking.user?.name,
+                status: booking.status,
+                date: booking.date
+            });
+        });
+        
+        res.json({ 
+            success: true, 
+            bookings,
+            totalBookings: bookings.length,
+            providerId: req.user._id
+        });
+    } catch (error) {
+        console.error('❌ Error fetching detailed provider bookings:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error fetching provider bookings', 
+            error: error.message 
+        });
+    }
+};
+
 // Get negotiations for provider's services
 exports.getProviderNegotiations = async (req, res) => {
     try {

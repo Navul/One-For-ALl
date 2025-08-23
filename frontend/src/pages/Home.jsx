@@ -10,7 +10,7 @@ const Home = () => {
     const ctaRef = useRef(null);
 
     useEffect(() => {
-        // Redirect authenticated users to their appropriate dashboard
+        // Redirect authenticated users to their appropriate main area
         if (isAuthenticated && user) {
             switch (user.role) {
                 case 'admin':
@@ -19,9 +19,11 @@ const Home = () => {
                 case 'provider':
                     navigate('/provider-dashboard');
                     break;
+                case 'customer':
                 case 'user':
                 default:
-                    navigate('/user-dashboard');
+                    // For customers, redirect to service browsing as their main area
+                    navigate('/browse-services');
                     break;
             }
         }

@@ -5,6 +5,7 @@ const { protect } = require('../middleware/auth');
 
 // Test endpoint to check if routes are working
 router.get('/test', (req, res) => {
+    console.log('🧪 TEST ENDPOINT HIT - Booking routes are working!');
     res.json({ success: true, message: 'Booking routes are working!' });
 });
 
@@ -92,7 +93,16 @@ router.post('/', protect, bookingController.createBooking);
 // Get bookings for user
 router.get('/user', protect, bookingController.getUserBookings);
 
-// Get bookings for provider
+// Get provider bookings with detailed client info (for BookedPrograms page) - MUST come before /provider
+router.get('/provider/my-bookings', protect, bookingController.getProviderBookingsDetailed);
+
+// Test endpoint specifically for provider bookings debugging
+router.get('/provider/test', (req, res) => {
+    console.log('🧪 PROVIDER TEST ENDPOINT HIT');
+    res.json({ success: true, message: 'Provider test endpoint is working!' });
+});
+
+// Get bookings for provider (general route - MUST come after specific /provider/* routes)
 router.get('/provider', protect, bookingController.getProviderBookings);
 
 // Update booking status

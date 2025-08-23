@@ -8,6 +8,8 @@ const MapComponent = ({
     onLocationSelect, 
     showUserLocation = true,
     userLocation,
+    onlineUsers = [],
+    currentUserLocation = null,
     height = '400px',
     className = '',
     style = {}
@@ -16,6 +18,7 @@ const MapComponent = ({
     const [map, setMap] = useState(null);
     const [markers, setMarkers] = useState([]);
     const userMarkerRef = useRef(null);
+    const onlineUserMarkersRef = useRef([]);
 
     useEffect(() => {
         if (mapRef.current && !map) {
@@ -52,36 +55,78 @@ const MapComponent = ({
         }
     }, [map, center]);
 
-    // Add user location marker
+    // Add user location marker (current user)
     useEffect(() => {
         if (map && showUserLocation && userLocation) {
             if (userMarkerRef.current) {
                 userMarkerRef.current.setMap(null);
             }
-
             userMarkerRef.current = new window.google.maps.Marker({
                 position: userLocation,
                 map: map,
                 title: 'Your Location',
                 icon: {
                     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="10" fill="#4285f4" stroke="#ffffff" stroke-width="2"/>
-                            <circle cx="12" cy="12" r="4" fill="#ffffff"/>
+                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="14" cy="14" r="12" fill="#4285f4" stroke="#ffffff" stroke-width="2"/>
+                            <circle cx="14" cy="14" r="5" fill="#ffffff"/>
                         </svg>
                     `),
-                    scaledSize: new window.google.maps.Size(24, 24),
-                    anchor: new window.google.maps.Point(12, 12)
-                }
+                    scaledSize: new window.google.maps.Size(28, 28),
+                    anchor: new window.google.maps.Point(14, 14)
+                },
+                zIndex: 1000
             });
         }
-
         return () => {
             if (userMarkerRef.current) {
                 userMarkerRef.current.setMap(null);
             }
         };
     }, [map, showUserLocation, userLocation]);
+
+    // Add real-time online user/provider markers
+    useEffect(() => {
+        if (map) {
+            // Clear previous markers
+            onlineUserMarkersRef.current.forEach(marker => marker.setMap(null));
+            onlineUserMarkersRef.current = [];
+
+            onlineUsers.forEach((user) => {
+                // Don't duplicate current user's marker
+                if (currentUserLocation && user.lat === currentUserLocation.lat && user.lng === currentUserLocation.lng) return;
+                if (!user.lat || !user.lng) return;
+                const marker = new window.google.maps.Marker({
+                    position: { lat: user.lat, lng: user.lng },
+                    map: map,
+                    title: user.name || 'User',
+                    icon: {
+                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" fill="${user.role === 'provider' ? '#ff9800' : '#2ecc71'}" stroke="#fff" stroke-width="2"/>
+                                <circle cx="12" cy="12" r="4" fill="#fff"/>
+                            </svg>
+                        `),
+                        scaledSize: new window.google.maps.Size(24, 24),
+                        anchor: new window.google.maps.Point(12, 12)
+                    },
+                    zIndex: 900
+                });
+                // Optionally: add info window
+                const infoWindow = new window.google.maps.InfoWindow({
+                    content: `<div style='padding:6px;'><b>${user.name || 'User'}</b><br/>Role: ${user.role || 'unknown'}${user.category ? `<br/>Category: ${user.category}` : ''}</div>`
+                });
+                marker.addListener('click', () => {
+                    infoWindow.open(map, marker);
+                });
+                onlineUserMarkersRef.current.push(marker);
+            });
+        }
+        return () => {
+            onlineUserMarkersRef.current.forEach(marker => marker.setMap(null));
+            onlineUserMarkersRef.current = [];
+        };
+    }, [map, onlineUsers, currentUserLocation]);
 
     // Add service markers
     useEffect(() => {
