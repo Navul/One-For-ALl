@@ -200,9 +200,21 @@ const Navbar = () => {
                                                     Notifications
                                                 </Link>
 
+
                                                 <Link 
-                                                    to="/instant-services" 
-                                                    className={`dropdown-item ${location.pathname === '/instant-services' ? 'active' : ''}`}
+                                                    to={
+                                                        user?.role === 'provider'
+                                                            ? '/instant-services-provider'
+                                                            : user?.role === 'customer' || user?.role === 'user'
+                                                                ? '/instant-services-client'
+                                                                : '/instant-services'
+                                                    }
+                                                    className={`dropdown-item ${
+                                                        location.pathname === '/instant-services' ||
+                                                        location.pathname === '/instant-services-provider' ||
+                                                        location.pathname === '/instant-services-client'
+                                                            ? 'active' : ''
+                                                    }`}
                                                     onClick={closeMenu}
                                                 >
                                                     <span className="item-icon">⚡</span>

@@ -7,6 +7,8 @@ import CustomerHome from './pages/CustomerHome';
 import AdminHome from './pages/AdminHome';
 import BrowseServices from './pages/BrowseServices';
 import InstantServices from './pages/InstantServices';
+import InstantServicesClient from './pages/InstantServicesClient';
+import InstantServicesProvider from './pages/InstantServicesProvider';
 import ServiceDetails from './pages/ServiceDetails';
 import NegotiationsDashboard from './pages/NegotiationsDashboard';
 import Notifications from './pages/Notifications';
@@ -64,6 +66,25 @@ const App = () => {
                         }
                     />
                     
+
+                    {/* Real-time Instant Services: role-specific routes */}
+                    <Route 
+                        path="/instant-services-client" 
+                        element={
+                            <ProtectedRoute allowedRoles={['user', 'customer', 'admin']}>
+                                <InstantServicesClient />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route 
+                        path="/instant-services-provider" 
+                        element={
+                            <ProtectedRoute allowedRoles={['provider', 'admin']}>
+                                <InstantServicesProvider />
+                            </ProtectedRoute>
+                        }
+                    />
+                    {/* Optionally keep the shared route for backwards compatibility */}
                     <Route 
                         path="/instant-services" 
                         element={

@@ -34,10 +34,11 @@ const InstantServices = ({ userRole = 'client' }) => {
                 lat: userLocation.lat,
                 lng: userLocation.lng,
                 category: selectedCategory,
-                // Optionally add more info: role, name, etc.
+                role: userRole,
+                name: window.localStorage.getItem('username') || userRole.charAt(0).toUpperCase() + userRole.slice(1)
             });
         }
-    }, [userLocation, selectedCategory, socketConnected]);
+    }, [userLocation, selectedCategory, socketConnected, userRole]);
 
     // Stub for handleMapClick to prevent undefined error
     const handleMapClick = (coords) => {
@@ -126,11 +127,26 @@ const InstantServices = ({ userRole = 'client' }) => {
                 padding: '18px 24px',
                 boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
                 display: 'flex',
-                alignItems: 'center',
-                gap: '32px',
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                gap: '16px',
                 maxWidth: '90vw',
                 minWidth: '320px'
             }}>
+                {/* User role indicator */}
+                <div style={{
+                    marginBottom: '8px',
+                    alignSelf: 'flex-end',
+                    background: userRole === 'provider' ? '#e3fcec' : '#e3e7fc',
+                    color: userRole === 'provider' ? '#218838' : '#2a3eb1',
+                    borderRadius: '6px',
+                    padding: '4px 14px',
+                    fontWeight: 'bold',
+                    fontSize: '15px',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
+                }}>
+                    Role: {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <label htmlFor="radius-range" style={{ fontWeight: 'bold', fontSize: '15px', color: '#333' }}>
                         Area Range:
@@ -303,6 +319,25 @@ const InstantServices = ({ userRole = 'client' }) => {
                 </div>
             </div>
             {/* ...existing styles... */}
+
+            {/* Debug panel for real-time troubleshooting */}
+            <div style={{
+                position: 'fixed',
+                left: 0,
+                bottom: 0,
+                width: '100vw',
+                background: '#222',
+                color: '#fff',
+                fontSize: '12px',
+                zIndex: 2000,
+                padding: '8px 16px',
+                opacity: 0.95,
+                maxHeight: '200px',
+                overflowY: 'auto',
+            }}>
+                <b>Debug: Raw onlineUsers from backend</b>
+                <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{JSON.stringify(onlineUsers, null, 2)}</pre>
+            </div>
         </div>
     );
 };
