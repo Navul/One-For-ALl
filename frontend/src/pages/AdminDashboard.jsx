@@ -7,11 +7,24 @@ const AdminDashboard = () => {
         totalUsers: 0,
         totalProviders: 0,
         totalServices: 0,
-        totalBookings: 0
+        totalBookings: 0,
+        activeUsers: 0,
+        bannedUsers: 0
     });
     const [users, setUsers] = useState([]);
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [showBanModal, setShowBanModal] = useState(false);
+    const [banReason, setBanReason] = useState('');
+    const [actionLoading, setActionLoading] = useState(false);
+    const [message, setMessage] = useState({ type: '', text: '' });
+
+    const showMessage = (type, text) => {
+        setMessage({ type, text });
+        setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+    };
 
     const fetchAdminData = useCallback(async () => {
         try {
@@ -51,10 +64,11 @@ const AdminDashboard = () => {
             }
         } catch (error) {
             console.error('Error fetching admin data:', error);
+            showMessage('error', 'Failed to fetch admin data');
         } finally {
             setLoading(false);
         }
-    }, [stats]);
+    }, []);
 
     useEffect(() => {
         fetchAdminData();
@@ -64,10 +78,47 @@ const AdminDashboard = () => {
         logout();
     };
 
-    const handleUserAction = async (userId, action) => {
+    const handleBanUser = async () => {
+        if (!selectedUser || !banReason.trim()) {
+            showMessage('error', 'Please provide a ban reason');
+            return;
+        }
+
+        setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/admin/users/${userId}/${action}`, {
+            const response = await fetch(`/api/admin/users/${selectedUser._id}/ban`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ reason: banReason })
+            });
+            
+            if (response.ok) {
+                showMessage('success', `User ${selectedUser.name} has been banned`);
+                await fetchAdminData();
+                setShowBanModal(false);
+                setBanReason('');
+                setSelectedUser(null);
+            } else {
+                const errorData = await response.json();
+                showMessage('error', errorData.message || 'Failed to ban user');
+            }
+        } catch (error) {
+            console.error('Error banning user:', error);
+            showMessage('error', 'Failed to ban user');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleUnbanUser = async (userId) => {
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/admin/users/${userId}/unban`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -76,10 +127,52 @@ const AdminDashboard = () => {
             });
             
             if (response.ok) {
-                fetchAdminData(); // Refresh data
+                showMessage('success', 'User has been unbanned');
+                await fetchAdminData();
+            } else {
+                const errorData = await response.json();
+                showMessage('error', errorData.message || 'Failed to unban user');
             }
         } catch (error) {
-            console.error(`Error ${action} user:`, error);
+            console.error('Error unbanning user:', error);
+            showMessage('error', 'Failed to unban user');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleDeleteUser = async (userId, permanent = false) => {
+        const confirmText = permanent ? 
+            'Are you sure you want to PERMANENTLY delete this user? This cannot be undone!' :
+            'Are you sure you want to delete this user?';
+        
+        if (!window.confirm(confirmText)) return;
+
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/admin/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ permanent })
+            });
+            
+            if (response.ok) {
+                const message = permanent ? 'User permanently deleted' : 'User soft deleted';
+                showMessage('success', message);
+                await fetchAdminData();
+            } else {
+                const errorData = await response.json();
+                showMessage('error', errorData.message || 'Failed to delete user');
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            showMessage('error', 'Failed to delete user');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -101,6 +194,13 @@ const AdminDashboard = () => {
                 </div>
             </header>
 
+            {/* Message Display */}
+            {message.text && (
+                <div className={`message ${message.type}`}>
+                    {message.text}
+                </div>
+            )}
+
             <main className="dashboard-main">
                 <div className="dashboard-grid">
                     {/* System Stats */}
@@ -110,6 +210,14 @@ const AdminDashboard = () => {
                             <div className="stat-card">
                                 <h3>Total Users</h3>
                                 <p className="stat-number">{stats.totalUsers}</p>
+                            </div>
+                            <div className="stat-card">
+                                <h3>Active Users</h3>
+                                <p className="stat-number">{stats.activeUsers}</p>
+                            </div>
+                            <div className="stat-card">
+                                <h3>Banned Users</h3>
+                                <p className="stat-number">{stats.bannedUsers}</p>
                             </div>
                             <div className="stat-card">
                                 <h3>Service Providers</h3>
@@ -143,41 +251,63 @@ const AdminDashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {users.map((user) => (
-                                            <tr key={user._id}>
-                                                <td>{user.name}</td>
-                                                <td>{user.email}</td>
+                                        {users.map((currentUser) => (
+                                            <tr key={currentUser._id} className={currentUser.isBanned ? 'banned-user' : ''}>
+                                                <td>{currentUser.name}</td>
+                                                <td>{currentUser.email}</td>
                                                 <td>
-                                                    <span className={`role-badge ${user.role}`}>
-                                                        {user.role}
+                                                    <span className={`role-badge ${currentUser.role}`}>
+                                                        {currentUser.role}
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span className={`status-badge ${user.isActive ? 'active' : 'inactive'}`}>
-                                                        {user.isActive ? 'Active' : 'Inactive'}
+                                                    <span className={`status-badge ${currentUser.isBanned ? 'banned' : 'active'}`}>
+                                                        {currentUser.isBanned ? 'Banned' : 'Active'}
                                                     </span>
+                                                    {currentUser.isBanned && currentUser.banReason && (
+                                                        <div className="ban-reason">
+                                                            Reason: {currentUser.banReason}
+                                                        </div>
+                                                    )}
                                                 </td>
-                                                <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                                                <td>{new Date(currentUser.createdAt).toLocaleDateString()}</td>
                                                 <td>
                                                     <div className="action-buttons">
-                                                        {user.isActive ? (
+                                                        <button 
+                                                            onClick={() => {
+                                                                setSelectedUser(currentUser);
+                                                                setShowUserModal(true);
+                                                            }}
+                                                            className="btn-info"
+                                                        >
+                                                            View
+                                                        </button>
+                                                        
+                                                        {!currentUser.isBanned ? (
                                                             <button 
-                                                                onClick={() => handleUserAction(user._id, 'deactivate')}
-                                                                className="deactivate-btn"
+                                                                onClick={() => {
+                                                                    setSelectedUser(currentUser);
+                                                                    setShowBanModal(true);
+                                                                }}
+                                                                className="btn-warning"
+                                                                disabled={actionLoading || currentUser._id === user?._id}
                                                             >
-                                                                Deactivate
+                                                                Ban
                                                             </button>
                                                         ) : (
                                                             <button 
-                                                                onClick={() => handleUserAction(user._id, 'activate')}
-                                                                className="activate-btn"
+                                                                onClick={() => handleUnbanUser(currentUser._id)}
+                                                                className="btn-success"
+                                                                disabled={actionLoading}
                                                             >
-                                                                Activate
+                                                                Unban
                                                             </button>
                                                         )}
+
                                                         <button 
-                                                            onClick={() => handleUserAction(user._id, 'delete')}
-                                                            className="delete-btn"
+                                                            onClick={() => handleDeleteUser(currentUser._id, false)}
+                                                            className="btn-danger"
+                                                            disabled={actionLoading || currentUser._id === user?._id}
                                                         >
                                                             Delete
                                                         </button>
@@ -197,19 +327,42 @@ const AdminDashboard = () => {
                     <div className="services-section">
                         <h2>Service Management</h2>
                         {services.length > 0 ? (
-                            <div className="services-grid">
-                                {services.map((service) => (
-                                    <div key={service._id} className="service-card">
-                                        <h4>{service.name}</h4>
-                                        <p>{service.description}</p>
-                                        <p className="price">${service.price || '0'}</p>
-                                        <p className="provider">Provider: {service.providerName || 'Unknown'}</p>
-                                        <div className="service-actions">
-                                            <button className="edit-btn">Edit</button>
-                                            <button className="delete-btn">Delete</button>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="services-table">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Category</th>
+                                            <th>Provider</th>
+                                            <th>Price</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {services.map((service) => (
+                                            <tr key={service._id}>
+                                                <td>{service.title}</td>
+                                                <td>{service.category}</td>
+                                                <td>{service.provider?.name || 'N/A'}</td>
+                                                <td>${service.price}</td>
+                                                <td>
+                                                    <span className={`status-badge ${service.isActive ? 'active' : 'inactive'}`}>
+                                                        {service.isActive ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </td>
+                                                <td>{new Date(service.createdAt).toLocaleDateString()}</td>
+                                                <td>
+                                                    <div className="action-buttons">
+                                                        <button className="btn-info">View</button>
+                                                        <button className="btn-danger">Delete</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         ) : (
                             <p className="no-data">No services found.</p>
@@ -217,6 +370,81 @@ const AdminDashboard = () => {
                     </div>
                 </div>
             </main>
+
+            {/* User Details Modal */}
+            {showUserModal && selectedUser && (
+                <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>User Details</h3>
+                            <button 
+                                onClick={() => setShowUserModal(false)}
+                                className="close-btn"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p><strong>Name:</strong> {selectedUser.name}</p>
+                            <p><strong>Email:</strong> {selectedUser.email}</p>
+                            <p><strong>Role:</strong> {selectedUser.role}</p>
+                            <p><strong>Phone:</strong> {selectedUser.phone || 'Not provided'}</p>
+                            <p><strong>Status:</strong> {selectedUser.isBanned ? 'Banned' : 'Active'}</p>
+                            <p><strong>Joined:</strong> {new Date(selectedUser.createdAt).toLocaleString()}</p>
+                            {selectedUser.isBanned && (
+                                <>
+                                    <p><strong>Banned At:</strong> {new Date(selectedUser.bannedAt).toLocaleString()}</p>
+                                    <p><strong>Ban Reason:</strong> {selectedUser.banReason}</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Ban User Modal */}
+            {showBanModal && selectedUser && (
+                <div className="modal-overlay" onClick={() => setShowBanModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Ban User: {selectedUser.name}</h3>
+                            <button 
+                                onClick={() => setShowBanModal(false)}
+                                className="close-btn"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label>Reason for ban:</label>
+                                <textarea
+                                    value={banReason}
+                                    onChange={(e) => setBanReason(e.target.value)}
+                                    placeholder="Please provide a reason for banning this user..."
+                                    rows="4"
+                                />
+                            </div>
+                            <div className="modal-actions">
+                                <button 
+                                    onClick={() => setShowBanModal(false)}
+                                    className="btn-cancel"
+                                    disabled={actionLoading}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleBanUser}
+                                    className="btn-danger"
+                                    disabled={actionLoading || !banReason.trim()}
+                                >
+                                    {actionLoading ? 'Banning...' : 'Ban User'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
                 .dashboard {
@@ -289,7 +517,7 @@ const AdminDashboard = () => {
 
                 .stats-cards {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                     gap: 1rem;
                     margin-top: 1rem;
                 }
@@ -304,11 +532,12 @@ const AdminDashboard = () => {
                 .stat-number {
                     font-size: 2rem;
                     font-weight: bold;
-                    color: #e53e3e;
+                    color: #3b82f6;
                     margin: 0;
                 }
 
-                .users-table {
+                .users-table,
+                .services-table {
                     overflow-x: auto;
                     margin-top: 1rem;
                 }
@@ -334,6 +563,7 @@ const AdminDashboard = () => {
 
                 .role-badge,
                 .status-badge {
+                    display: inline-block;
                     padding: 0.25rem 0.5rem;
                     border-radius: 4px;
                     font-size: 0.75rem;
@@ -366,89 +596,213 @@ const AdminDashboard = () => {
                     color: #c53030;
                 }
 
+                .status-badge.banned {
+                    background: #e53e3e;
+                    color: white;
+                }
+
+                .ban-reason {
+                    font-size: 0.7rem;
+                    color: #666;
+                    margin-top: 0.25rem;
+                }
+
+                .banned-user {
+                    background: #fef5e7;
+                }
+
                 .action-buttons {
                     display: flex;
                     gap: 0.5rem;
+                    flex-wrap: wrap;
                 }
 
-                .activate-btn,
-                .deactivate-btn,
-                .delete-btn,
-                .edit-btn {
+                .btn-info,
+                .btn-warning,
+                .btn-success,
+                .btn-danger,
+                .btn-cancel {
                     padding: 0.25rem 0.5rem;
                     border: none;
                     border-radius: 4px;
                     cursor: pointer;
                     font-size: 0.75rem;
+                    transition: opacity 0.2s;
                 }
 
-                .activate-btn {
-                    background: #48bb78;
+                .btn-info {
+                    background: #3182ce;
                     color: white;
                 }
 
-                .deactivate-btn {
-                    background: #ed8936;
-                    color: white;
-                }
-
-                .delete-btn {
+                .btn-warning {
                     background: #e53e3e;
                     color: white;
                 }
 
-                .edit-btn {
-                    background: #4299e1;
+                .btn-success {
+                    background: #38a169;
                     color: white;
                 }
 
-                .services-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-                    gap: 1rem;
-                    margin-top: 1rem;
+                .btn-danger {
+                    background: #e53e3e;
+                    color: white;
                 }
 
-                .service-card {
-                    background: #f7fafc;
+                .btn-cancel {
+                    background: #a0aec0;
+                    color: white;
+                }
+
+                .btn-info:hover,
+                .btn-warning:hover,
+                .btn-success:hover,
+                .btn-danger:hover,
+                .btn-cancel:hover {
+                    opacity: 0.8;
+                }
+
+                .btn-info:disabled,
+                .btn-warning:disabled,
+                .btn-success:disabled,
+                .btn-danger:disabled,
+                .btn-cancel:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+                .modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1000;
+                }
+
+                .modal {
+                    background: white;
+                    border-radius: 8px;
+                    max-width: 500px;
+                    width: 90%;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                }
+
+                .modal-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
                     padding: 1rem;
-                    border-radius: 6px;
-                    border: 1px solid #e2e8f0;
+                    border-bottom: 1px solid #e2e8f0;
                 }
 
-                .service-card h4 {
-                    margin: 0 0 0.5rem 0;
+                .modal-header h3 {
+                    margin: 0;
                     color: #2d3748;
                 }
 
-                .service-card p {
-                    margin: 0 0 0.5rem 0;
+                .close-btn {
+                    background: none;
+                    border: none;
+                    font-size: 1.5rem;
+                    cursor: pointer;
                     color: #666;
+                    padding: 0;
+                    width: 30px;
+                    height: 30px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .close-btn:hover {
+                    color: #333;
+                    background: #f0f0f0;
+                    border-radius: 50%;
+                }
+
+                .modal-body {
+                    padding: 1rem;
+                }
+
+                .modal-body p {
+                    margin: 0.5rem 0;
+                    line-height: 1.5;
+                }
+
+                .form-group {
+                    margin-bottom: 1rem;
+                }
+
+                .form-group label {
+                    display: block;
+                    margin-bottom: 0.5rem;
+                    font-weight: 500;
+                    color: #2d3748;
+                }
+
+                .form-group textarea {
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 4px;
+                    font-family: inherit;
                     font-size: 0.875rem;
+                    resize: vertical;
+                    box-sizing: border-box;
                 }
 
-                .price {
-                    font-weight: bold;
-                    color: #e53e3e;
-                    font-size: 1rem !important;
+                .form-group textarea:focus {
+                    outline: none;
+                    border-color: #3182ce;
                 }
 
-                .provider {
-                    font-style: italic;
-                    color: #4a5568 !important;
-                }
-
-                .service-actions {
+                .modal-actions {
                     display: flex;
                     gap: 0.5rem;
-                    margin-top: 0.5rem;
+                    justify-content: flex-end;
+                    margin-top: 1rem;
                 }
 
-                .service-actions .edit-btn,
-                .service-actions .delete-btn {
-                    flex: 1;
-                    padding: 0.5rem;
+                .modal-actions .btn-cancel,
+                .modal-actions .btn-danger {
+                    padding: 0.5rem 1rem;
                     font-size: 0.875rem;
+                }
+
+                .message {
+                    max-width: 1200px;
+                    margin: 1rem auto;
+                    padding: 1rem;
+                    border-radius: 4px;
+                    font-weight: 500;
+                }
+
+                .message.success {
+                    background: #c6f6d5;
+                    color: #22543d;
+                    border-left: 4px solid #38a169;
+                }
+
+                .message.error {
+                    background: #fed7d7;
+                    color: #c53030;
+                    border-left: 4px solid #e53e3e;
+                }
+
+                .loading {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 50vh;
+                    font-size: 1.2rem;
+                    color: #666;
                 }
 
                 .no-data {
@@ -458,15 +812,6 @@ const AdminDashboard = () => {
                     padding: 2rem;
                     background: #f7fafc;
                     border-radius: 6px;
-                }
-
-                .loading {
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    height: 100vh;
-                    font-size: 1.2rem;
-                    color: #666;
                 }
 
                 @media (max-width: 768px) {
@@ -480,7 +825,12 @@ const AdminDashboard = () => {
                         padding: 1rem;
                     }
 
-                    .users-table {
+                    .stats-cards {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+
+                    .users-table,
+                    .services-table {
                         font-size: 0.875rem;
                     }
 
@@ -488,8 +838,9 @@ const AdminDashboard = () => {
                         flex-direction: column;
                     }
 
-                    .services-grid {
-                        grid-template-columns: 1fr;
+                    .modal {
+                        margin: 1rem;
+                        width: calc(100% - 2rem);
                     }
                 }
             `}</style>

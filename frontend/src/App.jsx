@@ -12,7 +12,6 @@ import InstantServicesProvider from './pages/InstantServicesProvider';
 import ServiceDetails from './pages/ServiceDetails';
 import NegotiationsDashboard from './pages/NegotiationsDashboard';
 import Notifications from './pages/Notifications';
-import NotificationTest from './pages/NotificationTest';
 import MyBookings from './pages/MyBookings';
 import BookedPrograms from './pages/BookedPrograms';
 import Login from './pages/Login';
@@ -21,6 +20,7 @@ import UserDashboard from './pages/UserDashboard';
 import ProviderDashboard from './pages/ProviderDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import MyServices from './pages/MyServices';
+import Chats from './pages/Chats';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/NavbarNew';
 
@@ -110,16 +110,6 @@ const App = () => {
                         element={
                             <ProtectedRoute allowedRoles={['user', 'provider', 'admin']}>
                                 <Notifications />
-                            </ProtectedRoute>
-                        }
-                    />
-                    
-                    {/* Notification Test route */}
-                    <Route 
-                        path="/notification-test" 
-                        element={
-                            <ProtectedRoute allowedRoles={['user', 'provider', 'admin']}>
-                                <NotificationTest />
                             </ProtectedRoute>
                         }
                     />

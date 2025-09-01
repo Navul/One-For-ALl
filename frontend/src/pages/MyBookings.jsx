@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import io from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import { getUserBookings, updateBookingStatus } from '../services/bookingService';
 import RatingModal from '../components/RatingModal'; // eslint-disable-line no-unused-vars
@@ -13,6 +14,12 @@ const MyBookings = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [showRating, setShowRating] = useState(false); // eslint-disable-line no-unused-vars
   const [ratingBooking, setRatingBooking] = useState(null); // eslint-disable-line no-unused-vars
+  const [showChat, setShowChat] = useState(false);
+  const [chatProvider, setChatProvider] = useState(null);
+  const [chatBooking, setChatBooking] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const socketRef = useRef(null);
 
   useEffect(() => {
     fetchBookings();
@@ -103,6 +110,55 @@ const MyBookings = () => {
   const handleViewDetails = (booking) => {
     setSelectedBooking(booking);
     setShowDetails(true);
+  };
+
+  const handleChatWithProvider = (booking) => {
+    if (booking.service && booking.service.provider) {
+      setChatProvider(booking.service.provider);
+      setChatBooking(booking);
+      setShowChat(true);
+      setChatMessages([]);
+      setChatInput('');
+    }
+  };
+
+  // Setup socket connection for chat
+  useEffect(() => {
+    if (!showChat) return;
+    if (!chatBooking) return;
+    if (!socketRef.current) {
+      socketRef.current = io(process.env.REACT_APP_SOCKET_SERVER_URL || 'http://localhost:5000', {
+        transports: ['websocket'],
+        reconnection: true,
+      });
+    }
+    const socket = socketRef.current;
+    // Join chat room for this booking
+    socket.emit('chat:join', { bookingId: chatBooking._id });
+    // Fetch chat history
+    socket.emit('chat:history', { bookingId: chatBooking._id }, (msgs) => {
+      setChatMessages(msgs || []);
+    });
+    // Listen for new messages
+    socket.on('chat:message', (msg) => {
+      setChatMessages((prev) => [...prev, msg]);
+    });
+    return () => {
+      socket.emit('chat:leave', { bookingId: chatBooking._id });
+      socket.off('chat:message');
+    };
+  }, [showChat, chatBooking]);
+
+  const handleSendMessage = () => {
+    if (!chatInput.trim() || !chatBooking || !user) return;
+    const msg = {
+      bookingId: chatBooking._id,
+      from: { id: user._id, name: user.name, role: user.role },
+      to: { id: chatProvider._id, name: chatProvider.name, role: 'provider' },
+      message: chatInput.trim(),
+    };
+    socketRef.current.emit('chat:message', msg);
+    setChatInput('');
   };
 
   const handleRateService = (booking) => { // eslint-disable-line no-unused-vars
@@ -410,7 +466,7 @@ const MyBookings = () => {
                       {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                     </div>
                     <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>
-                      ${booking.service?.price || '0'}
+                      ${typeof booking.finalPrice === 'number' ? booking.finalPrice : (booking.service?.price || '0')}
                     </div>
                   </div>
                 </div>
@@ -446,7 +502,25 @@ const MyBookings = () => {
                   >
                     📋 View Details
                   </button>
-                  
+                  {booking.service?.provider && (
+                    <button
+                      onClick={() => handleChatWithProvider(booking)}
+                      style={{
+                        background: '#2563eb',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        cursor: 'pointer',
+                        transition: 'opacity 0.2s'
+                      }}
+                      onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                      onMouseOut={(e) => e.target.style.opacity = '1'}
+                    >
+                      💬 Chat
+                    </button>
+                  )}
                   {booking.status === 'pending' && (
                     <button
                       onClick={() => handleStatusChange(booking._id, 'cancelled')}
@@ -467,6 +541,97 @@ const MyBookings = () => {
                     </button>
                   )}
                 </div>
+      {/* Chat Modal */}
+      {showChat && chatProvider && chatBooking && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          padding: '2rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 20px 25px rgba(0, 0, 0, 0.15)',
+            maxWidth: '420px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            padding: '2rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#1f2937' }}>
+                Chat with {chatProvider.name || 'Provider'}
+              </h2>
+              <button
+                onClick={() => setShowChat(false)}
+                style={{
+                  background: '#f3f4f6',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '2rem',
+                  height: '2rem',
+                  cursor: 'pointer',
+                  fontSize: '1rem'
+                }}
+              >✕</button>
+            </div>
+            <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '1rem', minHeight: '120px', color: '#6b7280', maxHeight: '220px', overflowY: 'auto' }}>
+              {chatMessages.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#888' }}>No messages yet.</div>
+              ) : (
+                chatMessages.map((msg, idx) => (
+                  <div key={idx} style={{
+                    marginBottom: 8,
+                    textAlign: msg.from?.id === user._id ? 'right' : 'left'
+                  }}>
+                    <span style={{
+                      display: 'inline-block',
+                      background: msg.from?.id === user._id ? '#2563eb' : '#e5e7eb',
+                      color: msg.from?.id === user._id ? 'white' : '#1f2937',
+                      borderRadius: 8,
+                      padding: '6px 12px',
+                      fontSize: 13,
+                      maxWidth: 220,
+                      wordBreak: 'break-word'
+                    }}>
+                      {msg.message}
+                    </span>
+                    <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>
+                      {msg.from?.name || 'User'} • {new Date(msg.timestamp).toLocaleTimeString()}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              <input
+                type="text"
+                placeholder="Type your message..."
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', border: '1px solid #d1d5db' }}
+                onKeyDown={e => { if (e.key === 'Enter') handleSendMessage(); }}
+              />
+              <button
+                style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', padding: '0.5rem 1rem', cursor: 'pointer' }}
+                onClick={handleSendMessage}
+                disabled={!chatInput.trim()}
+              >Send</button>
+            </div>
+          </div>
+        </div>
+      )}
               </div>
             </div>
           ))}
@@ -553,7 +718,7 @@ const MyBookings = () => {
                     <strong>Price:</strong>
                     <br />
                     <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#10b981' }}>
-                      ${selectedBooking.service?.price || '0'}
+                      ${typeof selectedBooking.finalPrice === 'number' ? selectedBooking.finalPrice : (selectedBooking.service?.price || '0')}
                     </span>
                   </div>
                   <div>

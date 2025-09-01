@@ -166,9 +166,9 @@ const handleNotificationAction = async (req, res) => {
 
 // Send booking notification
 const sendBookingNotification = async (bookingId, type = 'BOOKING_CREATED') => {
+  // Socket.IO instance is attached to global in app.js
   try {
     console.log(`🔄 Sending booking notification for booking: ${bookingId}, type: ${type}`);
-    
     const booking = await Booking.findById(bookingId)
       .populate('service', 'title provider')
       .populate('user', 'name role')
@@ -189,11 +189,13 @@ const sendBookingNotification = async (bookingId, type = 'BOOKING_CREATED') => {
       throw new Error('Booking not found');
     }
 
+    let providerNotification = null;
+    let clientNotification = null;
     switch (type) {
       case 'BOOKING_CREATED':
         console.log('🔄 [sendBookingNotification] Creating notification for provider:', booking.provider?._id);
         // Notify provider
-        await createNotification({
+        providerNotification = await createNotification({
           userId: booking.provider._id,
           title: 'New Booking Request',
           message: `${booking.user.name} has booked your service "${booking.service.title}" for ${new Date(booking.date).toLocaleDateString()}`,
@@ -212,9 +214,25 @@ const sendBookingNotification = async (bookingId, type = 'BOOKING_CREATED') => {
           ]
         });
 
+        // Emit real-time notification to provider if possible
+        if (global.io) {
+          global.io.sockets.sockets.forEach((s) => {
+            if (s.userId === String(booking.provider._id) || s.id === String(booking.provider._id)) {
+              s.emit('notification:booking', {
+                type: 'booking',
+                bookingId: booking._id,
+                serviceTitle: booking.service.title,
+                clientName: booking.user.name,
+                date: booking.date,
+                notification: providerNotification
+              });
+            }
+          });
+        }
+
         console.log('🔄 [sendBookingNotification] Creating notification for client:', booking.user?._id);
         // Notify client
-        await createNotification({
+        clientNotification = await createNotification({
           userId: booking.user._id,
           title: 'Booking Confirmed',
           message: `Your booking for "${booking.service.title}" has been created successfully.`,

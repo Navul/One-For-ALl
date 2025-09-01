@@ -100,8 +100,8 @@ const Navbar = () => {
                                 Home
                             </Link>
                             
-                            {/* Show Negotiations for authenticated users */}
-                            {isAuthenticated && (
+                            {/* Show Negotiations for authenticated non-admin users */}
+                            {isAuthenticated && user?.role !== 'admin' && (
                                 <Link 
                                     to="/negotiations" 
                                     className={`nav-link negotiations-link ${location.pathname === '/negotiations' ? 'active' : ''}`}
@@ -147,79 +147,140 @@ const Navbar = () => {
                                                 
                                                 <div className="dropdown-divider"></div>
 
-                                                {/* Navigation Links */}
-                                                {(!isAuthenticated || user?.role === 'customer' || user?.role === 'user') && (
-                                                    <Link 
-                                                        to="/browse-services" 
-                                                        className={`dropdown-item ${location.pathname === '/browse-services' ? 'active' : ''}`}
-                                                        onClick={closeMenu}
-                                                    >
-                                                        <span className="item-icon">🔍</span>
-                                                        Services
-                                                    </Link>
-                                                )}
-
-                                                {(user?.role === 'customer' || user?.role === 'user') && (
-                                                    <Link 
-                                                        to="/my-bookings" 
-                                                        className={`dropdown-item ${location.pathname === '/my-bookings' ? 'active' : ''}`}
-                                                        onClick={closeMenu}
-                                                    >
-                                                        <span className="item-icon">📅</span>
-                                                        My Bookings
-                                                    </Link>
-                                                )}
-
-                                                {user?.role === 'provider' && (
+                                                {/* Admin Navigation Links */}
+                                                {user?.role === 'admin' ? (
                                                     <>
                                                         <Link 
-                                                            to="/my-services" 
-                                                            className={`dropdown-item ${location.pathname === '/my-services' ? 'active' : ''}`}
+                                                            to="/admin-dashboard" 
+                                                            className={`dropdown-item ${location.pathname === '/admin-dashboard' ? 'active' : ''}`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            <span className="item-icon">👑</span>
+                                                            Admin Panel
+                                                        </Link>
+                                                        
+                                                        <Link 
+                                                            to="/admin/users" 
+                                                            className={`dropdown-item ${location.pathname === '/admin/users' ? 'active' : ''}`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            <span className="item-icon">👥</span>
+                                                            Manage Users
+                                                        </Link>
+                                                        
+                                                        <Link 
+                                                            to="/admin/services" 
+                                                            className={`dropdown-item ${location.pathname === '/admin/services' ? 'active' : ''}`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            <span className="item-icon">🛠️</span>
+                                                            Manage Services
+                                                        </Link>
+                                                        
+                                                        <Link 
+                                                            to="/admin/reports" 
+                                                            className={`dropdown-item ${location.pathname === '/admin/reports' ? 'active' : ''}`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            <span className="item-icon">📈</span>
+                                                            Reports & Analytics
+                                                        </Link>
+                                                        
+                                                        <Link 
+                                                            to="/admin/system-settings" 
+                                                            className={`dropdown-item ${location.pathname === '/admin/system-settings' ? 'active' : ''}`}
                                                             onClick={closeMenu}
                                                         >
                                                             <span className="item-icon">⚙️</span>
-                                                            My Services
+                                                            System Settings
                                                         </Link>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {/* Regular User Navigation Links */}
+                                                        {(!isAuthenticated || user?.role === 'customer' || user?.role === 'user') && (
+                                                            <Link 
+                                                                to="/browse-services" 
+                                                                className={`dropdown-item ${location.pathname === '/browse-services' ? 'active' : ''}`}
+                                                                onClick={closeMenu}
+                                                            >
+                                                                <span className="item-icon">🔍</span>
+                                                                Services
+                                                            </Link>
+                                                        )}
+
+                                                        {/* Chats link for non-admin authenticated users */}
                                                         <Link 
-                                                            to="/booked-programs" 
-                                                            className={`dropdown-item ${location.pathname === '/booked-programs' ? 'active' : ''}`}
+                                                            to="/chats" 
+                                                            className={`dropdown-item ${location.pathname === '/chats' ? 'active' : ''}`}
                                                             onClick={closeMenu}
                                                         >
-                                                            <span className="item-icon">📋</span>
-                                                            Booked Programs
+                                                            <span className="item-icon">💬</span>
+                                                            Chats
+                                                        </Link>
+
+                                                        {(user?.role === 'customer' || user?.role === 'user') && (
+                                                            <Link 
+                                                                to="/my-bookings" 
+                                                                className={`dropdown-item ${location.pathname === '/my-bookings' ? 'active' : ''}`}
+                                                                onClick={closeMenu}
+                                                            >
+                                                                <span className="item-icon">📅</span>
+                                                                My Bookings
+                                                            </Link>
+                                                        )}
+
+                                                        {user?.role === 'provider' && (
+                                                            <>
+                                                                <Link 
+                                                                    to="/my-services" 
+                                                                    className={`dropdown-item ${location.pathname === '/my-services' ? 'active' : ''}`}
+                                                                    onClick={closeMenu}
+                                                                >
+                                                                    <span className="item-icon">⚙️</span>
+                                                                    My Services
+                                                                </Link>
+                                                                <Link 
+                                                                    to="/booked-programs" 
+                                                                    className={`dropdown-item ${location.pathname === '/booked-programs' ? 'active' : ''}`}
+                                                                    onClick={closeMenu}
+                                                                >
+                                                                    <span className="item-icon">📋</span>
+                                                                    Booked Programs
+                                                                </Link>
+                                                            </>
+                                                        )}
+
+                                                        <Link 
+                                                            to="/notifications" 
+                                                            className={`dropdown-item ${location.pathname === '/notifications' ? 'active' : ''}`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            <span className="item-icon">🔔</span>
+                                                            Notifications
+                                                        </Link>
+
+                                                        <Link 
+                                                            to={
+                                                                user?.role === 'provider'
+                                                                    ? '/instant-services-provider'
+                                                                    : user?.role === 'customer' || user?.role === 'user'
+                                                                        ? '/instant-services-client'
+                                                                        : '/instant-services'
+                                                            }
+                                                            className={`dropdown-item ${
+                                                                location.pathname === '/instant-services' ||
+                                                                location.pathname === '/instant-services-provider' ||
+                                                                location.pathname === '/instant-services-client'
+                                                                    ? 'active' : ''
+                                                            }`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            <span className="item-icon">⚡</span>
+                                                            Instant Services
                                                         </Link>
                                                     </>
                                                 )}
-
-                                                <Link 
-                                                    to="/notifications" 
-                                                    className={`dropdown-item ${location.pathname === '/notifications' ? 'active' : ''}`}
-                                                    onClick={closeMenu}
-                                                >
-                                                    <span className="item-icon">🔔</span>
-                                                    Notifications
-                                                </Link>
-
-
-                                                <Link 
-                                                    to={
-                                                        user?.role === 'provider'
-                                                            ? '/instant-services-provider'
-                                                            : user?.role === 'customer' || user?.role === 'user'
-                                                                ? '/instant-services-client'
-                                                                : '/instant-services'
-                                                    }
-                                                    className={`dropdown-item ${
-                                                        location.pathname === '/instant-services' ||
-                                                        location.pathname === '/instant-services-provider' ||
-                                                        location.pathname === '/instant-services-client'
-                                                            ? 'active' : ''
-                                                    }`}
-                                                    onClick={closeMenu}
-                                                >
-                                                    <span className="item-icon">⚡</span>
-                                                    Instant Services
-                                                </Link>
 
                                                 <Link 
                                                     to={getDashboardLink()} 
