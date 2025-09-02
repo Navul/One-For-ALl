@@ -14,11 +14,142 @@ const requireAdmin = (req, res, next) => {
     }
 };
 
+// Get all services (admin only)
+const getAllServices = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
+        const category = req.query.category || '';
+        const status = req.query.status || '';
+        
+        const skip = (page - 1) * limit;
+        
+        // Build filter query
+        let filter = {};
+        
+        if (search) {
+            filter.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+            ];
+        }
+        
+        if (category) {
+            filter.category = category;
+        }
+        
+        if (status) {
+            filter.status = status;
+        }
+        
+        const services = await Service.find(filter)
+            .populate('provider', 'name email')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+            
+        const totalServices = await Service.countDocuments(filter);
+        
+        res.json({
+            services,
+            totalPages: Math.ceil(totalServices / limit),
+            currentPage: page,
+            totalServices
+        });
+    } catch (error) {
+        console.error('Error fetching services:', error);
+        res.status(500).json({ message: 'Error fetching services' });
+    }
+};
+
+// Update service (admin only)
+const updateService = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        
+        // Don't allow changing the provider
+        delete updates.provider;
+        
+        const service = await Service.findByIdAndUpdate(
+            id, 
+            updates, 
+            { new: true, runValidators: true }
+        ).populate('provider', 'name email');
+        
+        if (!service) {
+            return res.status(404).json({ message: 'Service not found' });
+        }
+        
+        res.json({
+            message: 'Service updated successfully',
+            service
+        });
+    } catch (error) {
+        console.error('Error updating service:', error);
+        res.status(500).json({ message: 'Error updating service' });
+    }
+};
+
+// Delete service (admin only)
+const deleteService = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const service = await Service.findByIdAndDelete(id);
+        
+        if (!service) {
+            return res.status(404).json({ message: 'Service not found' });
+        }
+        
+        res.json({ message: 'Service deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting service:', error);
+        res.status(500).json({ message: 'Error deleting service' });
+    }
+};
+
+// Get service statistics (admin only)
+const getServiceStats = async (req, res) => {
+    try {
+        const totalServices = await Service.countDocuments();
+        const activeServices = await Service.countDocuments({ status: 'active' });
+        const pendingServices = await Service.countDocuments({ status: 'pending' });
+        const suspendedServices = await Service.countDocuments({ status: 'suspended' });
+        
+        // Get services by category
+        const servicesByCategory = await Service.aggregate([
+            {
+                $group: {
+                    _id: '$category',
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { count: -1 } }
+        ]);
+        
+        res.json({
+            totalServices,
+            activeServices,
+            pendingServices,
+            suspendedServices,
+            servicesByCategory
+        });
+    } catch (error) {
+        console.error('Error fetching service stats:', error);
+        res.status(500).json({ message: 'Error fetching service statistics' });
+    }
+};
+
 // Get admin dashboard stats
 const getAdminStats = async (req, res) => {
     try {
-        const totalUsers = await User.countDocuments();
-        const totalProviders = await User.countDocuments({ role: 'provider' });
+        const totalUsers = await User.countDocuments({ isDeleted: { $ne: true } });
+        const totalProviders = await User.countDocuments({ 
+            role: 'provider', 
+            isDeleted: { $ne: true } 
+        });
         const totalServices = await Service.countDocuments();
         const totalBookings = await Booking.countDocuments();
         
@@ -26,12 +157,14 @@ const getAdminStats = async (req, res) => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const activeUsers = await User.countDocuments({ 
-            lastLoginAt: { $gte: thirtyDaysAgo } 
+            lastLoginAt: { $gte: thirtyDaysAgo },
+            isDeleted: { $ne: true }
         });
         
         // Banned users
         const bannedUsers = await User.countDocuments({ 
-            isBanned: true 
+            isBanned: true,
+            isDeleted: { $ne: true }
         });
 
         res.json({
@@ -60,6 +193,9 @@ const getAllUsers = async (req, res) => {
     try {
         const { page = 1, limit = 20, role, status, search } = req.query;
         const query = {};
+        
+        // Exclude soft-deleted users
+        query.isDeleted = { $ne: true };
         
         // Filter by role
         if (role && role !== 'all') {
@@ -265,7 +401,7 @@ const unbanUser = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         const { userId } = req.params;
-        const { permanent = false } = req.query;
+        const { permanent = false } = req.body; // Changed from req.query to req.body
         
         const user = await User.findById(userId);
         if (!user) {
@@ -283,7 +419,7 @@ const deleteUser = async (req, res) => {
             });
         }
 
-        if (permanent === 'true') {
+        if (permanent === true || permanent === 'true') {
             // Hard delete - remove completely
             await User.findByIdAndDelete(userId);
             
@@ -434,5 +570,9 @@ module.exports = {
     unbanUser,
     deleteUser,
     changeUserRole,
-    resetUserPassword
+    resetUserPassword,
+    getAllServices,
+    updateService,
+    deleteService,
+    getServiceStats
 };

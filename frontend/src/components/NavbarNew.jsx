@@ -169,8 +169,19 @@ const Navbar = () => {
                                                         </Link>
                                                         
                                                         <Link 
-                                                            to="/admin/services" 
-                                                            className={`dropdown-item ${location.pathname === '/admin/services' ? 'active' : ''}`}
+                                                            to="/admin/banned-users" 
+                                                            className={`dropdown-item ${location.pathname === '/admin/banned-users' ? 'active' : ''}`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            <span className="item-icon">🚫</span>
+                                                            Banned Users
+                                                        </Link>
+                                                        
+       
+                                                        
+                                                        <Link 
+                                                            to="/admin/manage-services" 
+                                                            className={`dropdown-item ${location.pathname === '/admin/manage-services' ? 'active' : ''}`}
                                                             onClick={closeMenu}
                                                         >
                                                             <span className="item-icon">🛠️</span>

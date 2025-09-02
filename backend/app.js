@@ -28,7 +28,10 @@ const io = socketIo(server, {
 
 // Enable CORS for frontend before any routes or session middleware
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001'
+  ],
   credentials: true
 }));
 

@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ModalProvider } from './context/ModalContext';
+import ChatModal from './components/ChatModal';
 import Home from './pages/Home';
 import ProviderHome from './pages/ProviderHome';
 import CustomerHome from './pages/CustomerHome';
@@ -19,6 +21,8 @@ import Signup from './pages/Signup';
 import UserDashboard from './pages/UserDashboard';
 import ProviderDashboard from './pages/ProviderDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import BannedUsers from './pages/BannedUsers';
+import ManageServices from './pages/ManageServices';
 import MyServices from './pages/MyServices';
 import Chats from './pages/Chats';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -27,12 +31,13 @@ import Navbar from './components/NavbarNew';
 const App = () => {
     return (
         <AuthProvider>
-            <Router future={{ 
-                v7_startTransition: true,
-                v7_relativeSplatPath: true
-            }}>
-                <Navbar />
-                <Routes>
+            <ModalProvider>
+                <Router future={{ 
+                    v7_startTransition: true,
+                    v7_relativeSplatPath: true
+                }}>
+                    <Navbar />
+                    <Routes>
                     {/* Public routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
@@ -154,6 +159,22 @@ const App = () => {
                         }
                     />
                     <Route 
+                        path="/admin/banned-users" 
+                        element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                                <BannedUsers />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route 
+                        path="/admin/manage-services" 
+                        element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                                <ManageServices />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route 
                         path="/provider-dashboard" 
                         element={
                             <ProtectedRoute allowedRoles={['provider']}>
@@ -169,10 +190,10 @@ const App = () => {
                             </ProtectedRoute>
                         }
                     />
-                </Routes>
-            </Router>
+                    </Routes>
+                    <ChatModal />
+                </Router>
+            </ModalProvider>
         </AuthProvider>
     );
-};
-
-export default App;
+};export default App;

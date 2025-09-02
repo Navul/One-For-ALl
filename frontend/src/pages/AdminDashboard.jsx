@@ -141,10 +141,10 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleDeleteUser = async (userId, permanent = false) => {
+    const handleDeleteUser = async (userId, permanent = true) => {
         const confirmText = permanent ? 
-            'Are you sure you want to PERMANENTLY delete this user? This cannot be undone!' :
-            'Are you sure you want to delete this user?';
+            'Are you sure you want to PERMANENTLY delete this user? This action cannot be undone and will remove all their data!' :
+            'Are you sure you want to soft delete this user?';
         
         if (!window.confirm(confirmText)) return;
 
@@ -163,6 +163,11 @@ const AdminDashboard = () => {
             if (response.ok) {
                 const message = permanent ? 'User permanently deleted' : 'User soft deleted';
                 showMessage('success', message);
+                
+                // Immediately remove user from local state
+                setUsers(prevUsers => prevUsers.filter(u => u._id !== userId));
+                
+                // Also refresh data from server
                 await fetchAdminData();
             } else {
                 const errorData = await response.json();
@@ -305,7 +310,7 @@ const AdminDashboard = () => {
                                                         )}
 
                                                         <button 
-                                                            onClick={() => handleDeleteUser(currentUser._id, false)}
+                                                            onClick={() => handleDeleteUser(currentUser._id, true)}
                                                             className="btn-danger"
                                                             disabled={actionLoading || currentUser._id === user?._id}
                                                         >

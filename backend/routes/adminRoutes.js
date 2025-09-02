@@ -9,7 +9,11 @@ const {
     unbanUser,
     deleteUser,
     changeUserRole,
-    resetUserPassword
+    resetUserPassword,
+    getAllServices,
+    updateService,
+    deleteService,
+    getServiceStats
 } = require('../controllers/adminController');
 const { protect } = require('../middleware/auth');
 
@@ -30,5 +34,11 @@ router.put('/users/:userId/unban', unbanUser);
 router.delete('/users/:userId', deleteUser);
 router.put('/users/:userId/role', changeUserRole);
 router.put('/users/:userId/reset-password', resetUserPassword);
+
+// Service Management Routes
+router.get('/services', getAllServices);
+router.get('/services/stats', getServiceStats);
+router.put('/services/:id', updateService);
+router.delete('/services/:id', deleteService);
 
 module.exports = router;
