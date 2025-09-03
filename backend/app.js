@@ -37,6 +37,12 @@ app.use(cors({
   credentials: true
 }));
 
+// Add CORS debugging
+app.use((req, res, next) => {
+    console.log(`🌐 ${req.method} ${req.url} - Origin: ${req.headers.origin} - ${new Date().toISOString()}`);
+    next();
+});
+
 const PORT = process.env.PORT || 5000;
 
 // Log the MONGO_URI for debugging
@@ -227,6 +233,7 @@ io.on('connection', (socket) => {
 });
 
 // Session middleware
+// Note: Using MemoryStore for development. For production, consider using connect-mongo or connect-redis
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
     resave: false,
@@ -276,6 +283,17 @@ console.log('✅ All routes loaded successfully');
 // Add a simple test endpoint to verify the server is working
 app.get('/test', (req, res) => {
     res.json({ success: true, message: 'Server is working!' });
+});
+
+// Add CORS test endpoint
+app.get('/api/cors-test', (req, res) => {
+    res.json({ 
+        success: true, 
+        message: 'CORS is working!', 
+        origin: req.headers.origin,
+        clientUrl: process.env.CLIENT_URL,
+        timestamp: new Date().toISOString() 
+    });
 });
 
 // Add notification test endpoint directly in app.js
