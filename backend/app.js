@@ -20,7 +20,8 @@ const io = socketIo(server, {
     cors: {
         origin: [
             process.env.CLIENT_URL || 'http://localhost:3000',
-            'http://localhost:3001'
+            'http://localhost:3001',
+            'https://one-for-all-6lpg.onrender.com'
         ],
         credentials: true
     }
@@ -30,7 +31,8 @@ const io = socketIo(server, {
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'http://localhost:3001'
+    'http://localhost:3001',
+    'https://one-for-all-6lpg.onrender.com'
   ],
   credentials: true
 }));
