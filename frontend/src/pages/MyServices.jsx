@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { deleteNegotiation } from '../services/negotiationService';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const MyServices = () => {
     const [services, setServices] = useState([]);
     const [negotiations, setNegotiations] = useState([]);
@@ -24,7 +26,7 @@ const MyServices = () => {
     const fetchMyServices = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/services/all-my-services', {
+            const response = await fetch(`${API_BASE_URL}/api/services/all-my-services`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -45,7 +47,7 @@ const MyServices = () => {
             const token = localStorage.getItem('token');
             console.log('Fetching negotiations...');
             // Get all negotiations for provider (active and completed/cancelled)
-            const response = await fetch('http://localhost:5000/api/negotiations?type=provider', {
+            const response = await fetch(`${API_BASE_URL}/api/negotiations?type=provider`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -67,7 +69,7 @@ const MyServices = () => {
     const handleToggleAvailability = async (serviceId, currentAvailability) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/services/${serviceId}/toggle-availability`, {
+            const response = await fetch(`${API_BASE_URL}/api/services/${serviceId}/toggle-availability`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -102,7 +104,7 @@ const MyServices = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/services/${serviceId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/services/${serviceId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -132,7 +134,7 @@ const MyServices = () => {
     const saveEdit = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/services/${editingService.originalId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/services/${editingService.originalId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -171,7 +173,7 @@ const MyServices = () => {
     // Handle negotiation actions
     const handleAcceptOffer = async (negotiationId) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/negotiations/${negotiationId}/accept`, {
+            const response = await fetch(`${API_BASE_URL}/api/negotiations/${negotiationId}/accept`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -202,7 +204,7 @@ const MyServices = () => {
         const message = prompt('Add a message (optional):') || '';
 
         try {
-            const response = await fetch(`http://localhost:5000/api/negotiations/${negotiationId}/counter-offer`, {
+            const response = await fetch(`${API_BASE_URL}/api/negotiations/${negotiationId}/counter-offer`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -232,7 +234,7 @@ const MyServices = () => {
 
         if (window.confirm('Are you sure you want to decline this offer?')) {
             try {
-                const response = await fetch(`http://localhost:5000/api/negotiations/${negotiationId}/decline`, {
+                const response = await fetch(`${API_BASE_URL}/api/negotiations/${negotiationId}/decline`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`,
