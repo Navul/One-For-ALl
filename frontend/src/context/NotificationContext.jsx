@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import io from 'socket.io-client';
 import notificationService from '../services/notificationService';
@@ -19,6 +19,31 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [realtimeNotifications, setRealtimeNotifications] = useState([]);
   const socketRef = useRef(null);
+
+  // Define notification functions before they are used
+  const removeRealtimeNotification = useCallback((notificationId) => {
+    setRealtimeNotifications(prev => 
+      prev.filter(notif => notif.id !== notificationId)
+    );
+  }, []);
+
+  const addRealtimeNotification = useCallback((notification) => {
+    setRealtimeNotifications(prev => [notification, ...prev.slice(0, 9)]); // Keep last 10
+    
+    // Show browser notification if permission is granted
+    if (Notification.permission === 'granted') {
+      new Notification(notification.title, {
+        body: notification.message,
+        icon: '/favicon.ico',
+        tag: notification.id
+      });
+    }
+
+    // Auto-remove realtime notification after 5 seconds
+    setTimeout(() => {
+      removeRealtimeNotification(notification.id);
+    }, 5000);
+  }, [removeRealtimeNotification]);
 
   // Initialize socket connection for real-time notifications
   useEffect(() => {
@@ -42,13 +67,36 @@ export const NotificationProvider = ({ children }) => {
           id: `chat_${Date.now()}`,
           type: 'chat',
           title: 'New Message',
-          message: `${message.from?.name || 'Someone'} sent you a message`,
+          message: `${message.from?.name || 'Someone'} sent you a message: "${message.message.substring(0, 50)}${message.message.length > 50 ? '...' : ''}"`,
           data: {
             bookingId: message.bookingId,
             fromUser: message.from,
             messageContent: message.message
           },
           timestamp: new Date().toISOString(),
+          isRead: false
+        });
+
+        // Update unread count
+        setUnreadCount(prev => prev + 1);
+      }
+    });
+
+    // Listen for dedicated chat notifications from socket
+    socket.on('notification:chat', (notification) => {
+      // Only show notification if it's not from the current user
+      if (notification.from?.id !== user._id) {
+        addRealtimeNotification({
+          id: `chat_notification_${Date.now()}`,
+          type: 'chat',
+          title: notification.title || 'New Message',
+          message: notification.message || `${notification.from?.name || 'Someone'} sent you a message`,
+          data: {
+            bookingId: notification.bookingId,
+            fromUser: notification.from,
+            messageContent: notification.message
+          },
+          timestamp: notification.timestamp || new Date().toISOString(),
           isRead: false
         });
 
@@ -81,11 +129,12 @@ export const NotificationProvider = ({ children }) => {
     return () => {
       socket.emit('notification:leave', { userId: user._id });
       socket.off('chat:message');
+      socket.off('notification:chat');
       socket.off('notification:booking');
       socket.off('notification:new');
       socket.disconnect();
     };
-  }, [user]);
+  }, [user, addRealtimeNotification]);
 
   // Fetch initial unread count
   useEffect(() => {
@@ -111,30 +160,6 @@ export const NotificationProvider = ({ children }) => {
       console.error('Error fetching notifications:', error);
       setNotifications([]);
     }
-  };
-
-  const addRealtimeNotification = (notification) => {
-    setRealtimeNotifications(prev => [notification, ...prev.slice(0, 9)]); // Keep last 10
-    
-    // Show browser notification if permission is granted
-    if (Notification.permission === 'granted') {
-      new Notification(notification.title, {
-        body: notification.message,
-        icon: '/favicon.ico',
-        tag: notification.id
-      });
-    }
-
-    // Auto-remove realtime notification after 5 seconds
-    setTimeout(() => {
-      removeRealtimeNotification(notification.id);
-    }, 5000);
-  };
-
-  const removeRealtimeNotification = (notificationId) => {
-    setRealtimeNotifications(prev => 
-      prev.filter(notif => notif.id !== notificationId)
-    );
   };
 
   const markAsRead = async (notificationId) => {

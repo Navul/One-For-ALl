@@ -1,11 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
 import notificationService from '../services/notificationService';
 
 const NotificationBell = ({ onUnreadCountChange }) => {
+  const navigate = useNavigate();
+  const { unreadCount: contextUnreadCount, realtimeNotifications } = useNotifications();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Update local unread count when context changes
+  useEffect(() => {
+    setUnreadCount(contextUnreadCount);
+  }, [contextUnreadCount]);
+
+  // Update notifications when realtime notifications change
+  useEffect(() => {
+    if (realtimeNotifications.length > 0) {
+      // Merge realtime notifications with existing ones, avoiding duplicates
+      setNotifications(prev => {
+        const existingIds = new Set(prev.map(n => n._id || n.id));
+        const newNotifications = realtimeNotifications.filter(n => !existingIds.has(n.id));
+        return [...newNotifications, ...prev];
+      });
+    }
+  }, [realtimeNotifications]);
 
   useEffect(() => {
     fetchUnreadCount();
@@ -68,6 +89,17 @@ const NotificationBell = ({ onUnreadCountChange }) => {
       } catch (error) {
         console.error('Error marking notification as read:', error);
       }
+    }
+
+    // Handle different notification types
+    if (notification.type === 'chat') {
+      // Navigate to chats page and close the dropdown
+      setShowNotifications(false);
+      navigate('/chats');
+    } else if (notification.relatedModel === 'Booking' && notification.relatedId) {
+      // For booking-related notifications, you could navigate to booking details
+      // This is optional - you can customize based on your needs
+      setShowNotifications(false);
     }
   };
 
@@ -133,6 +165,7 @@ const NotificationBell = ({ onUnreadCountChange }) => {
       case 'NEGOTIATION_EXPIRED': return '⏰';
       case 'BOOKING_CREATED': return '📅';
       case 'SERVICE_BOOKED': return '🎯';
+      case 'chat': return '💬';
       default: return '🔔';
     }
   };

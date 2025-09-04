@@ -59,6 +59,30 @@ const chatController = require('./controllers/chatController');
 global.io = io;
 
 io.on('connection', (socket) => {
+    console.log('👤 User connected:', socket.id);
+
+    // Handle user authentication and identification
+    socket.on('authenticate', ({ userId, token }) => {
+        // You can add token verification here if needed
+        socket.userId = userId;
+        socket.join(`user_${userId}`); // Join user-specific room
+        console.log(`🔐 User ${userId} authenticated on socket ${socket.id}`);
+    });
+
+    // Handle notification room joining
+    socket.on('notification:join', ({ userId }) => {
+        socket.userId = userId;
+        socket.join(`user_${userId}`);
+        socket.join(`notifications_${userId}`);
+        console.log(`📩 User ${userId} joined notification room`);
+    });
+
+    socket.on('notification:leave', ({ userId }) => {
+        socket.leave(`user_${userId}`);
+        socket.leave(`notifications_${userId}`);
+        console.log(`📩 User ${userId} left notification room`);
+    });
+
     // --- CHAT SYSTEM (persistent) ---
     // Join chat room for a booking
     socket.on('chat:join', ({ bookingId }) => {
@@ -89,14 +113,42 @@ io.on('connection', (socket) => {
             const savedMsg = await chatController.saveMessage(msgData);
             console.log('[SOCKET] chat:message saved', savedMsg);
             io.to(`chat_${bookingId}`).emit('chat:message', savedMsg);
-            // Real-time notification to recipient (if online)
+            
+            // Create persistent notification for the recipient
+            const { createNotification } = require('./controllers/notificationController');
+            await createNotification({
+                userId: to.id,
+                title: 'New Message',
+                message: `${from.name} sent you a message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`,
+                type: 'chat',
+                relatedId: bookingId,
+                relatedModel: 'Booking',
+                data: {
+                    bookingId,
+                    fromUser: from,
+                    messageContent: message
+                }
+            });
+            
+            // Real-time notification to recipient using socket rooms
+            io.to(`notifications_${to.id}`).emit('notification:chat', {
+                type: 'chat',
+                title: 'New Message',
+                message: `${from.name} sent you a message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`,
+                bookingId,
+                from,
+                timestamp: msgData.timestamp
+            });
+            
+            // Also emit to individual user room as fallback
             Object.values(io.sockets.sockets).forEach((s) => {
                 if (s.userId === to.id || s.id === to.id) {
                     s.emit('notification:chat', {
                         type: 'chat',
+                        title: 'New Message',
+                        message: `${from.name} sent you a message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`,
                         bookingId,
                         from,
-                        message,
                         timestamp: msgData.timestamp
                     });
                 }
