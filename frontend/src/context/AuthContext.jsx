@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }) => {
         
         if (token) {
             try {
-                const response = await fetch('/api/auth/me', {
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/me`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }) => {
         dispatch({ type: ActionTypes.SET_LOADING, payload: true });
         
         try {
-            const response = await fetch('/api/auth/register', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -148,7 +148,7 @@ export const AuthProvider = ({ children }) => {
         dispatch({ type: ActionTypes.SET_LOADING, payload: true });
         
         try {
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -131,7 +131,7 @@ const ProviderLocationManager = ({ onLocationUpdate }) => {
         setError('');
 
         try {
-            const response = await fetch('/api/auth/profile', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
