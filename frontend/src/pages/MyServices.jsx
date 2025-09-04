@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { deleteNegotiation } from '../services/negotiationService';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { apiRequestJSON, API_BASE_URL, ENDPOINTS } from '../utils/api';
 
 const MyServices = () => {
     const [services, setServices] = useState([]);

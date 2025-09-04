@@ -3,6 +3,7 @@ import locationService from '../services/locationService';
 import GoogleMap from '../components/GoogleMap';
 import LocationPermission from '../components/LocationPermission';
 import ServiceCardWithBargain from '../components/ServiceCardWithBargain';
+import { apiRequestJSON, ENDPOINTS } from '../utils/api';
 
 const BrowseServices = () => {
   const [services, setServices] = useState([]);
@@ -160,7 +161,7 @@ const BrowseServices = () => {
       };
       
       // Use unified booking system
-      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/bookings`, {
+      const res = await apiRequestJSON(ENDPOINTS.BOOKINGS, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
