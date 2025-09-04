@@ -326,12 +326,6 @@ if (require('fs').existsSync(buildPath)) {
     console.log('❌ Build directory not found at:', buildPath);
 }
 
-// Request logging middleware
-app.use((req, res, next) => {
-    console.log(`🌐 ${req.method} ${req.url} - ${new Date().toISOString()}`);
-    next();
-});
-
 // Routes
 const serviceRoutes = require('./routes/serviceRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -356,6 +350,12 @@ app.use('/api/admin', adminRoutes);
 console.log('📋 Booking routes loaded');
 console.log('📍 Instant services routes loaded');
 console.log('✅ All routes loaded successfully');
+
+// Request logging middleware (moved after static files and routes)
+app.use((req, res, next) => {
+    console.log(`🌐 ${req.method} ${req.url} - ${new Date().toISOString()}`);
+    next();
+});
 
 // Add a simple test endpoint to verify the server is working
 app.get('/test', (req, res) => {
