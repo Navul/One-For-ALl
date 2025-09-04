@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import locationService from '../services/locationService';
 import GoogleMap from './GoogleMap';
+import { getAuthToken } from '../utils/api';
 
 const ProviderLocationManager = ({ onLocationUpdate }) => {
     const [currentLocation, setCurrentLocation] = useState(null);
@@ -106,7 +107,7 @@ const ProviderLocationManager = ({ onLocationUpdate }) => {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Authorization': `Bearer ${getAuthToken()}`
                 },
                 body: JSON.stringify({ available: enabled })
             });
@@ -135,7 +136,7 @@ const ProviderLocationManager = ({ onLocationUpdate }) => {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Authorization': `Bearer ${getAuthToken()}`
                 },
                 body: JSON.stringify({ serviceRadius: radius })
             });

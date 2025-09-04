@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { apiRequestJSON, ENDPOINTS } from '../utils/api';
 
 const UserDashboard = () => {
     const { user } = useAuth();
@@ -16,34 +17,16 @@ const UserDashboard = () => {
     const fetchUserData = async () => {
         try {
             // Fetch available services
-            const servicesResponse = await fetch('http://localhost:5000/api/services');
-            if (servicesResponse.ok) {
-                const servicesData = await servicesResponse.json();
-                setServices(servicesData || []);
-            }
+            const servicesData = await apiRequestJSON(ENDPOINTS.SERVICES);
+            setServices(servicesData || []);
 
             // Fetch user bookings
-            const token = localStorage.getItem('token');
-            const bookingsResponse = await fetch('http://localhost:5000/api/bookings/user', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (bookingsResponse.ok) {
-                const bookingsData = await bookingsResponse.json();
-                setBookings(bookingsData.bookings || []);
-            }
+            const bookingsData = await apiRequestJSON(ENDPOINTS.USER_BOOKINGS);
+            setBookings(bookingsData.bookings || []);
 
             // Fetch user negotiations
-            const negotiationsResponse = await fetch('http://localhost:5000/api/negotiations?type=client&status=active', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (negotiationsResponse.ok) {
-                const negotiationsData = await negotiationsResponse.json();
-                setNegotiations(negotiationsData.negotiations || []);
-            }
+            const negotiationsData = await apiRequestJSON(`${ENDPOINTS.NEGOTIATIONS}?type=client&status=active`);
+            setNegotiations(negotiationsData.negotiations || []);
         } catch (error) {
             console.error('Error fetching user data:', error);
         } finally {

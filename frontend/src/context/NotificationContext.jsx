@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { useAuth } from './AuthContext';
 import io from 'socket.io-client';
 import notificationService from '../services/notificationService';
+import { SOCKET_SERVER_URL } from '../utils/api';
 
 const NotificationContext = createContext();
 
@@ -24,7 +25,7 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (!user) return;
 
-    const socket = io(process.env.REACT_APP_SOCKET_SERVER_URL || 'http://localhost:5000', {
+    const socket = io(SOCKET_SERVER_URL, {
       transports: ['websocket'],
       reconnection: true,
     });

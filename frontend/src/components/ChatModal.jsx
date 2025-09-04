@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import io from 'socket.io-client';
+import { SOCKET_SERVER_URL } from '../utils/api';
 
 const ChatModal = () => {
   const { user } = useAuth();
@@ -18,7 +19,7 @@ const ChatModal = () => {
     if (!isOpen || !booking) return;
 
     if (!socketRef.current) {
-      socketRef.current = io(process.env.REACT_APP_SOCKET_SERVER_URL || 'http://localhost:5000', {
+      socketRef.current = io(SOCKET_SERVER_URL, {
         transports: ['websocket'],
         reconnection: true,
       });

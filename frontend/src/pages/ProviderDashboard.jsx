@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { apiRequestJSON, ENDPOINTS } from '../utils/api';
 // import ProviderNotifications from '../components/ProviderNotifications';
 
 function AddServiceForm({ onServiceAdded, onClose }) {
@@ -34,25 +35,14 @@ function AddServiceForm({ onServiceAdded, onClose }) {
         setLoading(true);
         setError('');
         try {
-            const token = localStorage.getItem('token');
-            console.log('Token:', token); // Debug token
             console.log('Sending data:', { title, description, price, category }); // Debug data
             
-            const res = await fetch('http://localhost:5000/api/services', {
+            const data = await apiRequestJSON(ENDPOINTS.SERVICES, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ title, description, price, category })
             });
             
-            const data = await res.json();
             console.log('Response:', data); // Debug response
-            
-            if (!res.ok) {
-                throw new Error(data.message || `HTTP error! status: ${res.status}`);
-            }
             
             setTitle(''); 
             setDescription(''); 
@@ -147,29 +137,13 @@ const ProviderDashboard = () => {
 
     const fetchProviderData = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
             // Fetch provider's services (both active and inactive for management)
-            const servicesResponse = await fetch('http://localhost:5000/api/services/all-my-services', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (servicesResponse.ok) {
-                const servicesData = await servicesResponse.json();
-                setMyServices(servicesData.data || []);
-            }
+            const servicesData = await apiRequestJSON(ENDPOINTS.ALL_MY_SERVICES);
+            setMyServices(servicesData.data || []);
 
             // Fetch bookings for provider's services
-            const bookingsResponse = await fetch('http://localhost:5000/api/bookings/provider', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (bookingsResponse.ok) {
-                const bookingsData = await bookingsResponse.json();
-                setBookings(bookingsData.bookings || []);
-            }
+            const bookingsData = await apiRequestJSON(ENDPOINTS.PROVIDER_BOOKINGS);
+            setBookings(bookingsData.bookings || []);
         } catch (error) {
             console.error('Error fetching provider data:', error);
         } finally {
@@ -179,30 +153,19 @@ const ProviderDashboard = () => {
 
     const handleToggleAvailability = async (serviceId, currentAvailability) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/services/${serviceId}/toggle-availability`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+            const data = await apiRequestJSON(`${ENDPOINTS.SERVICES}/${serviceId}/toggle-availability`, {
+                method: 'PUT'
             });
-
-            if (response.ok) {
-                const data = await response.json();
-                // Update the service in the local state
-                setMyServices(prevServices => 
-                    prevServices.map(service => 
-                        service._id === serviceId 
-                            ? { ...service, availability: data.data.availability }
-                            : service
-                    )
-                );
-                console.log(data.message);
-            } else {
-                const errorData = await response.json();
-                console.error('Error toggling availability:', errorData.message);
-            }
+            
+            // Update the service in the local state
+            setMyServices(prevServices => 
+                prevServices.map(service => 
+                    service._id === serviceId 
+                        ? { ...service, availability: data.data.availability }
+                        : service
+                )
+            );
+            console.log(data.message);
         } catch (error) {
             console.error('Error toggling service availability:', error);
         }
