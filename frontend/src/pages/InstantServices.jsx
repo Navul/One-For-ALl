@@ -4,7 +4,7 @@ import GoogleMap from '../components/GoogleMap';
 import LocationPermission from '../components/LocationPermission';
 // All hooks and logic must be inside the component. No code here.
 
-const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL || 'http://localhost:5000';
+const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL;
 const InstantServices = ({ userRole = 'client' }) => {
     // Provider: Real-time open requests
     const [openRequests, setOpenRequests] = useState([]);

@@ -18,7 +18,7 @@ const ChatModal = () => {
     if (!isOpen || !booking) return;
 
     if (!socketRef.current) {
-      socketRef.current = io(process.env.REACT_APP_SOCKET_SERVER_URL || 'http://localhost:5000', {
+  socketRef.current = io(process.env.REACT_APP_SOCKET_SERVER_URL, {
         transports: ['websocket'],
         reconnection: true,
       });

@@ -68,7 +68,7 @@
             resultDiv.innerHTML = '<p>Fetching services...</p>';
 
             try {
-                const response = await fetch('http://localhost:5000/api/services', {
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/api/services`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -127,7 +127,7 @@
             resultDiv.innerHTML = '<p>Testing booking...</p>';
 
             try {
-                const response = await fetch('http://localhost:5000/api/bookings/book', {
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings/book`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

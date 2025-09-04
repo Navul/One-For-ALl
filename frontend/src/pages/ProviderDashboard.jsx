@@ -38,7 +38,7 @@ function AddServiceForm({ onServiceAdded, onClose }) {
             console.log('Token:', token); // Debug token
             console.log('Sending data:', { title, description, price, category }); // Debug data
             
-            const res = await fetch('http://localhost:5000/api/services', {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/services`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -150,7 +150,7 @@ const ProviderDashboard = () => {
             const token = localStorage.getItem('token');
             
             // Fetch provider's services (both active and inactive for management)
-            const servicesResponse = await fetch('http://localhost:5000/api/services/all-my-services', {
+            const servicesResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/services/all-my-services`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -161,7 +161,7 @@ const ProviderDashboard = () => {
             }
 
             // Fetch bookings for provider's services
-            const bookingsResponse = await fetch('http://localhost:5000/api/bookings/provider', {
+            const bookingsResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings/provider`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -180,7 +180,7 @@ const ProviderDashboard = () => {
     const handleToggleAvailability = async (serviceId, currentAvailability) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/services/${serviceId}/toggle-availability`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/services/${serviceId}/toggle-availability`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

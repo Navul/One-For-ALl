@@ -16,7 +16,7 @@ const UserDashboard = () => {
     const fetchUserData = async () => {
         try {
             // Fetch available services
-            const servicesResponse = await fetch('http://localhost:5000/api/services');
+            const servicesResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/services`);
             if (servicesResponse.ok) {
                 const servicesData = await servicesResponse.json();
                 setServices(servicesData || []);
@@ -24,7 +24,7 @@ const UserDashboard = () => {
 
             // Fetch user bookings
             const token = localStorage.getItem('token');
-            const bookingsResponse = await fetch('http://localhost:5000/api/bookings/user', {
+            const bookingsResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings/user`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -35,7 +35,7 @@ const UserDashboard = () => {
             }
 
             // Fetch user negotiations
-            const negotiationsResponse = await fetch('http://localhost:5000/api/negotiations?type=client&status=active', {
+            const negotiationsResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/negotiations?type=client&status=active`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
