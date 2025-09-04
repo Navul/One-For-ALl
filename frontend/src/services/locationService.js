@@ -1,4 +1,5 @@
 // Location service for handling geolocation and maps functionality
+import { apiRequestJSON, getAuthToken, ENDPOINTS } from '../utils/api';
 
 class LocationService {
     constructor() {
@@ -164,24 +165,14 @@ class LocationService {
     // API calls for location-related endpoints
     async updateUserLocation(latitude, longitude, address) {
         try {
-            const token = localStorage.getItem('authToken');
-            const response = await fetch('/api/location/user/location', {
+            const data = await apiRequestJSON(ENDPOINTS.USER_LOCATION, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({
                     latitude,
                     longitude,
                     address
                 })
             });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to update location');
-            }
             return data;
         } catch (error) {
             console.error('Error updating user location:', error);
@@ -191,20 +182,10 @@ class LocationService {
 
     async toggleLocationSharing(enabled) {
         try {
-            const token = localStorage.getItem('authToken');
-            const response = await fetch('/api/location/user/location/toggle', {
+            const data = await apiRequestJSON('/api/location/user/location/toggle', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ enabled })
             });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to toggle location sharing');
-            }
             return data;
         } catch (error) {
             console.error('Error toggling location sharing:', error);
@@ -214,23 +195,13 @@ class LocationService {
 
     async getNearbyServices(latitude, longitude, options = {}) {
         try {
-            const token = localStorage.getItem('authToken');
             const params = new URLSearchParams({
                 latitude: latitude.toString(),
                 longitude: longitude.toString(),
                 ...options
             });
 
-            const response = await fetch(`/api/location/services/nearby?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to get nearby services');
-            }
+            const data = await apiRequestJSON(`${ENDPOINTS.NEARBY_SERVICES}?${params}`);
             return data;
         } catch (error) {
             console.error('Error getting nearby services:', error);
@@ -240,44 +211,21 @@ class LocationService {
 
     async getAvailableInstantServices(latitude, longitude, options = {}) {
         try {
-            const token = localStorage.getItem('authToken');
             const params = new URLSearchParams({
                 latitude: latitude.toString(),
                 longitude: longitude.toString(),
                 ...options
             });
 
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-            
-            // Only add auth header if token exists and is not empty
-            if (token && token.trim() !== '') {
-                headers['Authorization'] = `Bearer ${token}`;
+            // This endpoint may work without authentication, so we use a try-catch approach
+            try {
+                const data = await apiRequestJSON(`/api/location/instant/available?${params}`);
+                return data;
+            } catch (error) {
+                // If authentication fails, the API helper will handle token cleanup
+                // Just propagate the error
+                throw error;
             }
-
-            const response = await fetch(`/api/location/instant/available?${params}`, {
-                headers
-            });
-
-            const data = await response.json();
-            if (!response.ok) {
-                // If it's a token error, try removing the bad token and retrying without auth
-                if (data.message && data.message.includes('Token') && token) {
-                    localStorage.removeItem('authToken');
-                    // Retry without token
-                    const retryResponse = await fetch(`/api/location/instant/available?${params}`, {
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    const retryData = await retryResponse.json();
-                    if (!retryResponse.ok) {
-                        throw new Error(retryData.message || 'Failed to get available instant services');
-                    }
-                    return retryData;
-                }
-                throw new Error(data.message || 'Failed to get available instant services');
-            }
-            return data;
         } catch (error) {
             console.error('Error getting available instant services:', error);
             throw error;
@@ -286,13 +234,8 @@ class LocationService {
 
     async requestInstantService(serviceId, latitude, longitude, address, notes = '', urgency = 'normal') {
         try {
-            const token = localStorage.getItem('authToken');
-            const response = await fetch('/api/location/instant/request', {
+            const data = await apiRequestJSON('/api/location/instant/request', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({
                     serviceId,
                     latitude,
@@ -302,11 +245,6 @@ class LocationService {
                     urgency
                 })
             });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to request instant service');
-            }
             return data;
         } catch (error) {
             console.error('Error requesting instant service:', error);
