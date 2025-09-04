@@ -49,20 +49,27 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (!user) return;
 
-  const socket = io(process.env.REACT_APP_SOCKET_SERVER_URL, {
+    const socket = io(process.env.REACT_APP_SOCKET_SERVER_URL, {
       transports: ['websocket'],
       reconnection: true,
     });
 
     socketRef.current = socket;
 
+    // Authenticate user with socket
+    socket.emit('authenticate', { userId: user._id, token: user.token });
+    
     // Join user's notification room
     socket.emit('notification:join', { userId: user._id });
 
+    console.log('[NOTIFICATIONS] Socket connected for user:', user._id);
+
     // Listen for new chat messages
     socket.on('chat:message', (message) => {
+      console.log('[NOTIFICATIONS] Received chat:message:', message);
       // Only show notification if the message is not from the current user
       if (message.from?.id !== user._id) {
+        console.log('[NOTIFICATIONS] Adding chat message notification for user:', user._id);
         addRealtimeNotification({
           id: `chat_${Date.now()}`,
           type: 'chat',
@@ -79,13 +86,17 @@ export const NotificationProvider = ({ children }) => {
 
         // Update unread count
         setUnreadCount(prev => prev + 1);
+      } else {
+        console.log('[NOTIFICATIONS] Ignoring own message');
       }
     });
 
     // Listen for dedicated chat notifications from socket
     socket.on('notification:chat', (notification) => {
+      console.log('[NOTIFICATIONS] Received notification:chat:', notification);
       // Only show notification if it's not from the current user
       if (notification.from?.id !== user._id) {
+        console.log('[NOTIFICATIONS] Adding chat notification for user:', user._id);
         addRealtimeNotification({
           id: `chat_notification_${Date.now()}`,
           type: 'chat',
@@ -102,6 +113,8 @@ export const NotificationProvider = ({ children }) => {
 
         // Update unread count
         setUnreadCount(prev => prev + 1);
+      } else {
+        console.log('[NOTIFICATIONS] Ignoring own notification');
       }
     });
 

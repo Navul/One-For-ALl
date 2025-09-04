@@ -80,7 +80,8 @@ io.on('connection', (socket) => {
         socket.userId = userId;
         socket.join(`user_${userId}`);
         socket.join(`notifications_${userId}`);
-        console.log(`📩 User ${userId} joined notification room`);
+        console.log(`📩 User ${userId} joined notification room notifications_${userId}`);
+        console.log(`📩 Socket ${socket.id} now has userId:`, socket.userId);
     });
 
     socket.on('notification:leave', ({ userId }) => {
@@ -137,6 +138,7 @@ io.on('connection', (socket) => {
             });
             
             // Real-time notification to recipient using socket rooms
+            console.log('[SOCKET] Emitting notification:chat to room:', `notifications_${to.id}`);
             io.to(`notifications_${to.id}`).emit('notification:chat', {
                 type: 'chat',
                 title: 'New Message',
@@ -147,8 +149,10 @@ io.on('connection', (socket) => {
             });
             
             // Also emit to individual user room as fallback
+            console.log('[SOCKET] Also checking individual sockets for user:', to.id);
             Object.values(io.sockets.sockets).forEach((s) => {
                 if (s.userId === to.id || s.id === to.id) {
+                    console.log('[SOCKET] Found socket for user, emitting notification:', s.id);
                     s.emit('notification:chat', {
                         type: 'chat',
                         title: 'New Message',
