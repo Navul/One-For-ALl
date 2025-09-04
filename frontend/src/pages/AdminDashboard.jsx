@@ -31,7 +31,7 @@ const AdminDashboard = () => {
             const token = localStorage.getItem('token');
             
             // Fetch admin stats
-            const statsResponse = await fetch('/api/admin/stats', {
+            const statsResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/stats`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -42,7 +42,7 @@ const AdminDashboard = () => {
             }
 
             // Fetch all users
-            const usersResponse = await fetch('/api/admin/users', {
+            const usersResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -53,7 +53,7 @@ const AdminDashboard = () => {
             }
 
             // Fetch all services
-            const servicesResponse = await fetch('/api/services', {
+            const servicesResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/services`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -87,7 +87,7 @@ const AdminDashboard = () => {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/admin/users/${selectedUser._id}/ban`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users/${selectedUser._id}/ban`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -118,7 +118,7 @@ const AdminDashboard = () => {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/admin/users/${userId}/unban`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users/${userId}/unban`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -151,7 +151,7 @@ const AdminDashboard = () => {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/admin/users/${userId}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users/${userId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,

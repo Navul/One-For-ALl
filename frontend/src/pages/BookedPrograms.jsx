@@ -112,13 +112,13 @@ const BookedPrograms = () => {
     try {
       setLoading(true);
       console.log('🔄 Fetching provider bookings...');
-      console.log('🔗 Using proxy URL:', '/api/bookings/provider/my-bookings');
+      console.log('🔗 Using API URL:', `${process.env.REACT_APP_API_URL}/api/bookings/provider/my-bookings`);
       console.log('👤 Current user role:', user?.role);
       
       const token = localStorage.getItem('token');
       console.log('🔑 Token exists:', !!token);
       
-      const response = await fetch('/api/bookings/provider/my-bookings', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings/provider/my-bookings`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -165,7 +165,7 @@ const BookedPrograms = () => {
   const handleStatusChange = async (bookingId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/bookings/${bookingId}/status`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings/${bookingId}/status`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,

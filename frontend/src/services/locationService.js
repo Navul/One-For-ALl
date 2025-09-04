@@ -165,7 +165,7 @@ class LocationService {
     async updateUserLocation(latitude, longitude, address) {
         try {
             const token = localStorage.getItem('authToken');
-            const response = await fetch('/api/location/user/location', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/location/user/location`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -192,7 +192,7 @@ class LocationService {
     async toggleLocationSharing(enabled) {
         try {
             const token = localStorage.getItem('authToken');
-            const response = await fetch('/api/location/user/location/toggle', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/location/user/location/toggle`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -221,7 +221,7 @@ class LocationService {
                 ...options
             });
 
-            const response = await fetch(`/api/location/services/nearby?${params}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/location/services/nearby?${params}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -256,7 +256,7 @@ class LocationService {
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const response = await fetch(`/api/location/instant/available?${params}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/location/instant/available?${params}`, {
                 headers
             });
 
@@ -266,7 +266,7 @@ class LocationService {
                 if (data.message && data.message.includes('Token') && token) {
                     localStorage.removeItem('authToken');
                     // Retry without token
-                    const retryResponse = await fetch(`/api/location/instant/available?${params}`, {
+                    const retryResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/location/instant/available?${params}`, {
                         headers: { 'Content-Type': 'application/json' }
                     });
                     const retryData = await retryResponse.json();
@@ -287,7 +287,7 @@ class LocationService {
     async requestInstantService(serviceId, latitude, longitude, address, notes = '', urgency = 'normal') {
         try {
             const token = localStorage.getItem('authToken');
-            const response = await fetch('/api/location/instant/request', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/location/instant/request`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

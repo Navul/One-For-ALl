@@ -16,7 +16,7 @@ const BannedUsers = () => {
     const fetchBannedUsers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/admin/users?banned=true', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users?banned=true`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -47,7 +47,7 @@ const BannedUsers = () => {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/admin/users/${userId}/unban`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users/${userId}/unban`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -78,7 +78,7 @@ const BannedUsers = () => {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/admin/users/${userId}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users/${userId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,

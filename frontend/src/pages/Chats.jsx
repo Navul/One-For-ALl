@@ -17,8 +17,8 @@ const Chats = () => {
     const fetchChats = async () => {
       const token = localStorage.getItem('token');
       const url = user?.role === 'provider'
-        ? '/api/bookings/provider/my-bookings'
-        : '/api/bookings/user';
+        ? `${process.env.REACT_APP_API_URL}/api/bookings/provider/my-bookings`
+        : `${process.env.REACT_APP_API_URL}/api/bookings/user`;
       const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });

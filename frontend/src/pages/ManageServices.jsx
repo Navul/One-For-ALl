@@ -22,7 +22,7 @@ const ManageServices = () => {
     const fetchServices = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/admin/services', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/services`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -50,7 +50,7 @@ const ManageServices = () => {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/admin/services/${serviceId}`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/services/${serviceId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -79,7 +79,7 @@ const ManageServices = () => {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/admin/services/${serviceId}/toggle-status`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/services/${serviceId}/toggle-status`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

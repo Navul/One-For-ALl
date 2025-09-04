@@ -102,7 +102,7 @@ const ProviderLocationManager = ({ onLocationUpdate }) => {
         setError('');
 
         try {
-            const response = await fetch('/api/location/instant/provider/toggle', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/location/instant/provider/toggle`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
