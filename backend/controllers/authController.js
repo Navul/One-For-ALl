@@ -80,11 +80,13 @@ const register = async (req, res) => {
 // @route   POST /api/auth/login
 // @access  Public
 const login = async (req, res) => {
+    console.log('🔐 Login attempt:', { email: req.body.email, hasPassword: !!req.body.password });
     try {
         const { email, password } = req.body;
 
         // Validate email and password
         if (!email || !password) {
+            console.log('❌ Missing email or password');
             return res.status(400).json({
                 success: false,
                 message: 'Please provide email and password'
@@ -93,8 +95,10 @@ const login = async (req, res) => {
 
         // Check for user and include password
         const user = await User.findOne({ email }).select('+password');
+        console.log('👤 User found:', user ? 'Yes' : 'No');
         
         if (!user) {
+            console.log('❌ User not found for email:', email);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid email or password'

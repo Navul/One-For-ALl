@@ -307,6 +307,11 @@ app.post('/api/bookings/test-post', (req, res) => {
     res.json({ success: true, message: 'POST endpoint is working!' });
 });
 
+// Test login route accessibility
+app.get('/api/auth/test', (req, res) => {
+    res.json({ success: true, message: 'Auth routes are accessible!' });
+});
+
 // Start the server
 server.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
