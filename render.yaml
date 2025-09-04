@@ -3,7 +3,7 @@ services:
     name: one-for-all
     env: node
     plan: free
-    buildCommand: npm run render-postbuild
+    buildCommand: cd backend && npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV

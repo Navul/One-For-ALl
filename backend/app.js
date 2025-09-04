@@ -325,6 +325,7 @@ const possibleBuildPaths = [
     path.join(process.cwd(), 'build')                    // Build in root
 ];
 
+// Make buildPath globally available for the catch-all handler
 let buildPath = null;
 for (const tryPath of possibleBuildPaths) {
     if (fs.existsSync(tryPath) && fs.existsSync(path.join(tryPath, 'index.html'))) {
@@ -442,10 +443,17 @@ app.use((req, res) => {
     if (req.method === 'GET' && !req.path.startsWith('/api/')) {
         if (buildPath) {
             const indexPath = path.join(buildPath, 'index.html');
-            console.log('📄 Serving index.html for:', req.path);
+            console.log('📄 Serving index.html for:', req.path, 'from:', indexPath);
             res.sendFile(indexPath);
         } else {
             console.log('❌ No build path available, cannot serve index.html');
+            console.log('❌ buildPath variable is:', buildPath);
+            console.log('❌ Re-checking build paths:');
+            possibleBuildPaths.forEach(p => {
+                const exists = fs.existsSync(p);
+                const hasIndex = exists && fs.existsSync(path.join(p, 'index.html'));
+                console.log(`  ${p}: exists=${exists}, has index.html=${hasIndex}`);
+            });
             res.status(404).send('Frontend build not found - build path not configured');
         }
     } else {
