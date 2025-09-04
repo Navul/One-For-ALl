@@ -56,13 +56,21 @@ exports.getUnreadCounts = async (req, res) => {
   try {
     const userId = req.user._id.toString();
     
+    console.log(`📊 Getting unread counts for user: ${userId}, role: ${req.user.role}`);
+    
     // Get all bookings for the user
     const Booking = require('../models/booking');
     const bookings = await Booking.find({
       $or: [
         { user: req.user._id },
-        { 'service.provider': req.user._id }
+        { provider: req.user._id }, // Direct provider reference
+        { 'service.provider': req.user._id } // Service-based provider reference
       ]
+    }).populate('service');
+    
+    console.log(`📋 Found ${bookings.length} bookings for user`);
+    bookings.forEach(booking => {
+      console.log(`📋 Booking: ${booking._id}, user: ${booking.user}, provider: ${booking.provider}, service.provider: ${booking.service?.provider}`);
     });
     
     const bookingIds = bookings.map(b => b._id);
@@ -78,10 +86,14 @@ exports.getUnreadCounts = async (req, res) => {
         'readBy.userId': { $ne: userId } // Not read by current user
       });
       
+      console.log(`💬 Booking ${bookingId}: ${count} unread messages`);
+      
       if (count > 0) {
         unreadCounts[bookingId.toString()] = count;
       }
     }
+    
+    console.log(`📊 Final unread counts:`, unreadCounts);
     
     res.json({ success: true, unreadCounts });
   } catch (error) {

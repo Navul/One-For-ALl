@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import chatService from '../services/chatService';
 import io from 'socket.io-client';
 
 const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL;
@@ -10,22 +11,63 @@ const Chats = () => {
   const [activeChat, setActiveChat] = useState(null); // Booking object
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [unreadCounts, setUnreadCounts] = useState({}); // New state for unread message counts
   const socketRef = useRef(null);
 
   // Fetch all bookings for this user (client or provider)
   useEffect(() => {
     const fetchChats = async () => {
-      const token = localStorage.getItem('token');
-      const url = user?.role === 'provider'
-        ? `${process.env.REACT_APP_API_URL}/api/bookings/provider/my-bookings`
-        : `${process.env.REACT_APP_API_URL}/api/bookings/user`;
-      const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setChats(data.bookings || data || []);
+      try {
+        const token = localStorage.getItem('token');
+        const url = user?.role === 'provider'
+          ? `${process.env.REACT_APP_API_URL}/api/bookings/provider/my-bookings`
+          : `${process.env.REACT_APP_API_URL}/api/bookings/user`;
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setChats(data.bookings || data || []);
+        
+        // Fetch unread message counts
+        try {
+          console.log('🔄 Fetching unread counts for chats...');
+          const unreadData = await chatService.getUnreadCounts();
+          console.log('📨 Chats unread data response:', unreadData);
+          if (unreadData.success) {
+            setUnreadCounts(unreadData.unreadCounts);
+            console.log('💬 Chats unread message counts:', unreadData.unreadCounts);
+          } else {
+            console.log('❌ Chats unread data not successful:', unreadData);
+          }
+        } catch (unreadError) {
+          console.error('❌ Error fetching unread counts:', unreadError);
+          // Don't show error to user, just log it
+        }
+      } catch (error) {
+        console.error('❌ Error fetching chats:', error);
+      }
     };
+    
     if (user) fetchChats();
+    
+    // Listen for messages being marked as read
+    const handleMessagesMarkedAsRead = (event) => {
+      const { bookingId } = event.detail;
+      console.log('📖 Messages marked as read for booking:', bookingId);
+      
+      // Remove this booking from unread counts
+      setUnreadCounts(prev => {
+        const updated = { ...prev };
+        delete updated[bookingId];
+        return updated;
+      });
+    };
+    
+    window.addEventListener('messagesMarkedAsRead', handleMessagesMarkedAsRead);
+    
+    return () => {
+      window.removeEventListener('messagesMarkedAsRead', handleMessagesMarkedAsRead);
+    };
   }, [user]);
 
   // Setup socket and chat room for active chat
@@ -50,6 +92,30 @@ const Chats = () => {
       socket.off('chat:message');
     };
   }, [activeChat]);
+
+  const handleSelectChat = async (booking) => {
+    setActiveChat(booking);
+    
+    // Mark messages as read when chat is selected
+    try {
+      await chatService.markAsRead(booking._id);
+      console.log('📖 Messages marked as read for booking:', booking._id);
+      
+      // Remove this booking from unread counts
+      setUnreadCounts(prev => {
+        const updated = { ...prev };
+        delete updated[booking._id];
+        return updated;
+      });
+      
+      // Emit event for other components
+      window.dispatchEvent(new CustomEvent('messagesMarkedAsRead', { 
+        detail: { bookingId: booking._id } 
+      }));
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
 
   const handleSendMessage = () => {
     if (!chatInput.trim() || !activeChat || !user) return;
@@ -79,8 +145,9 @@ const Chats = () => {
               return (
                 <li key={booking._id} style={{ marginBottom: 10 }}>
                   <button
-                    onClick={() => setActiveChat(booking)}
+                    onClick={() => handleSelectChat(booking)}
                     style={{
+                      position: 'relative',
                       width: '100%',
                       textAlign: 'left',
                       background: activeChat?._id === booking._id ? '#e0e7ff' : '#f3f4f6',
@@ -93,6 +160,26 @@ const Chats = () => {
                     }}
                   >
                     {other.name || 'User'} <span style={{ color: '#888', fontSize: 13 }}>({booking.service?.title || 'Service'})</span>
+                    {unreadCounts[booking._id] && (
+                      <span style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: '#ef4444',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: '18px',
+                        height: '18px',
+                        fontSize: '0.7rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold',
+                        border: '2px solid white'
+                      }}>
+                        {unreadCounts[booking._id] > 9 ? '9+' : unreadCounts[booking._id]}
+                      </span>
+                    )}
                   </button>
                 </li>
               );

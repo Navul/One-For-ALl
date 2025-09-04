@@ -178,10 +178,14 @@ const BookedPrograms = () => {
       
       // Fetch unread message counts
       try {
+        console.log('🔄 Fetching unread counts for provider...');
         const unreadData = await chatService.getUnreadCounts();
+        console.log('📨 Unread data response:', unreadData);
         if (unreadData.success) {
           setUnreadCounts(unreadData.unreadCounts);
-          console.log('💬 Unread message counts:', unreadData.unreadCounts);
+          console.log('💬 Provider unread message counts:', unreadData.unreadCounts);
+        } else {
+          console.log('❌ Unread data not successful:', unreadData);
         }
       } catch (unreadError) {
         console.error('❌ Error fetching unread counts:', unreadError);
