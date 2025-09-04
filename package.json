@@ -5,13 +5,22 @@
   "main": "backend/app.js",
   "scripts": {
     "start": "node backend/app.js",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "server": "cd backend && npm start",
+    "server:dev": "cd backend && npm run dev",
+    "server:prod": "cd backend && npm run production",
     "client": "cd frontend && npm start",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "client:dev": "cd frontend && npm run dev",
+    "client:build": "cd frontend && npm run build",
+    "client:build:dev": "cd frontend && npm run build:dev",
+    "client:build:prod": "cd frontend && npm run build:prod",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "build": "cd frontend && npm run build",
-    "heroku-postbuild": "npm run install-all && npm run build",
-    "render-postbuild": "npm run install-all && npm run build"
+    "build:dev": "cd frontend && npm run build:dev",
+    "build:prod": "cd frontend && npm run build:prod",
+    "deploy:render": "npm run build:prod",
+    "heroku-postbuild": "npm run install-all && npm run build:prod",
+    "render-postbuild": "npm run install-all && npm run build:prod"
   },
   "dependencies": {
     "axios": "^1.10.0",

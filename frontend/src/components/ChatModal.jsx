@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import chatService from '../services/chatService';
 import io from 'socket.io-client';
 
 const ChatModal = () => {
@@ -34,6 +35,23 @@ const ChatModal = () => {
       setChatMessages(msgs || []);
     });
 
+    // Mark messages as read when chat opens
+    const markMessagesAsRead = async () => {
+      try {
+        await chatService.markAsRead(booking._id);
+        console.log('📖 Messages marked as read for booking:', booking._id);
+        
+        // Emit an event to notify parent components to refresh unread counts
+        window.dispatchEvent(new CustomEvent('messagesMarkedAsRead', { 
+          detail: { bookingId: booking._id } 
+        }));
+      } catch (error) {
+        console.error('Error marking messages as read:', error);
+      }
+    };
+    
+    markMessagesAsRead();
+
     // Listen for new messages
     socket.on('chat:message', (msg) => {
       setChatMessages((prev) => [...prev, msg]);
@@ -58,7 +76,7 @@ const ChatModal = () => {
 
     const msg = {
       bookingId: booking._id,
-      from: { id: user._id, name: user.name, role: user.role },
+      from: { id: user.id || user._id, name: user.name, role: user.role },
       to: { id: chatWith._id, name: chatWith.name, role: chatWith.role || (user.role === 'provider' ? 'client' : 'provider') },
       message: chatInput.trim(),
     };
@@ -164,22 +182,22 @@ const ChatModal = () => {
                 marginBottom: '1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: msg.from?.id === user._id ? 'flex-end' : 'flex-start'
+                alignItems: msg.from?.id === (user.id || user._id) ? 'flex-end' : 'flex-start'
               }}>
                 <div style={{
-                  background: msg.from?.id === user._id 
+                  background: msg.from?.id === (user.id || user._id) 
                     ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
                     : 'white',
-                  color: msg.from?.id === user._id ? 'white' : '#374151',
+                  color: msg.from?.id === (user.id || user._id) ? 'white' : '#374151',
                   borderRadius: '18px',
                   padding: '0.75rem 1rem',
                   fontSize: '0.9rem',
                   maxWidth: '80%',
                   wordBreak: 'break-word',
-                  boxShadow: msg.from?.id === user._id 
+                  boxShadow: msg.from?.id === (user.id || user._id) 
                     ? '0 4px 12px rgba(102, 126, 234, 0.3)' 
                     : '0 2px 8px rgba(0, 0, 0, 0.1)',
-                  border: msg.from?.id === user._id ? 'none' : '1px solid #e5e7eb'
+                  border: msg.from?.id === (user.id || user._id) ? 'none' : '1px solid #e5e7eb'
                 }}>
                   {msg.message}
                 </div>

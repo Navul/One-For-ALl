@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import chatService from '../services/chatService';
 import io from 'socket.io-client';
 
 const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL;
@@ -17,6 +18,7 @@ const BookedPrograms = () => {
   const [showDetails, setShowDetails] = useState(false);
   const socketRef = useRef(null);
   const [bookingNotification, setBookingNotification] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({}); // New state for unread message counts
 
   // Listen for real-time booking notifications
   useEffect(() => {
@@ -106,6 +108,25 @@ const BookedPrograms = () => {
     if (user?.role === 'provider') {
       fetchProviderBookings();
     }
+    
+    // Listen for messages being marked as read
+    const handleMessagesMarkedAsRead = (event) => {
+      const { bookingId } = event.detail;
+      console.log('📖 Messages marked as read for booking:', bookingId);
+      
+      // Remove this booking from unread counts
+      setUnreadCounts(prev => {
+        const updated = { ...prev };
+        delete updated[bookingId];
+        return updated;
+      });
+    };
+    
+    window.addEventListener('messagesMarkedAsRead', handleMessagesMarkedAsRead);
+    
+    return () => {
+      window.removeEventListener('messagesMarkedAsRead', handleMessagesMarkedAsRead);
+    };
   }, [user]);
 
   const fetchProviderBookings = async () => {
@@ -154,6 +175,18 @@ const BookedPrograms = () => {
       });
       
       setBookings(providerBookings);
+      
+      // Fetch unread message counts
+      try {
+        const unreadData = await chatService.getUnreadCounts();
+        if (unreadData.success) {
+          setUnreadCounts(unreadData.unreadCounts);
+          console.log('💬 Unread message counts:', unreadData.unreadCounts);
+        }
+      } catch (unreadError) {
+        console.error('❌ Error fetching unread counts:', unreadError);
+        // Don't show error to user, just log it
+      }
     } catch (error) {
       console.error('❌ Error fetching provider bookings:', error);
       alert(`Failed to fetch bookings: ${error.message}`);
@@ -540,6 +573,7 @@ const BookedPrograms = () => {
                     <button
                       onClick={() => handleChatWithClient(booking)}
                       style={{
+                        position: 'relative',
                         background: '#2563eb',
                         color: 'white',
                         border: 'none',
@@ -553,6 +587,26 @@ const BookedPrograms = () => {
                       onMouseOut={(e) => e.target.style.opacity = '1'}
                     >
                       💬 Chat
+                      {unreadCounts[booking._id] && (
+                        <span style={{
+                          position: 'absolute',
+                          top: '-8px',
+                          right: '-8px',
+                          background: '#ef4444',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '20px',
+                          height: '20px',
+                          fontSize: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 'bold',
+                          border: '2px solid white'
+                        }}>
+                          {unreadCounts[booking._id] > 9 ? '9+' : unreadCounts[booking._id]}
+                        </span>
+                      )}
                     </button>
                   )}
                   {booking.status === 'pending' && (

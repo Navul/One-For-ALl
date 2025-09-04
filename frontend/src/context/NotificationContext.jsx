@@ -28,21 +28,30 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   const addRealtimeNotification = useCallback((notification) => {
-    setRealtimeNotifications(prev => [notification, ...prev.slice(0, 9)]); // Keep last 10
+    console.log('[NOTIFICATIONS] Adding realtime notification:', notification);
+    setRealtimeNotifications(prev => {
+      const newNotifications = [notification, ...prev.slice(0, 9)];
+      console.log('[NOTIFICATIONS] Updated realtime notifications:', newNotifications);
+      return newNotifications;
+    });
     
     // Show browser notification if permission is granted
     if (Notification.permission === 'granted') {
+      console.log('[NOTIFICATIONS] Showing browser notification');
       new Notification(notification.title, {
         body: notification.message,
         icon: '/favicon.ico',
         tag: notification.id
       });
+    } else {
+      console.log('[NOTIFICATIONS] Browser notification permission not granted:', Notification.permission);
     }
 
-    // Auto-remove realtime notification after 5 seconds
+    // Auto-remove realtime notification after 10 seconds (increased from 5)
     setTimeout(() => {
+      console.log('[NOTIFICATIONS] Auto-removing notification after 10 seconds:', notification.id);
       removeRealtimeNotification(notification.id);
-    }, 5000);
+    }, 10000);
   }, [removeRealtimeNotification]);
 
   // Initialize socket connection for real-time notifications
@@ -57,19 +66,19 @@ export const NotificationProvider = ({ children }) => {
     socketRef.current = socket;
 
     // Authenticate user with socket
-    socket.emit('authenticate', { userId: user._id, token: user.token });
+    socket.emit('authenticate', { userId: user.id || user._id, token: user.token });
     
     // Join user's notification room
-    socket.emit('notification:join', { userId: user._id });
+    socket.emit('notification:join', { userId: user.id || user._id });
 
-    console.log('[NOTIFICATIONS] Socket connected for user:', user._id);
+    console.log('[NOTIFICATIONS] Socket connected for user:', user.id || user._id);
 
     // Listen for new chat messages
     socket.on('chat:message', (message) => {
       console.log('[NOTIFICATIONS] Received chat:message:', message);
       // Only show notification if the message is not from the current user
-      if (message.from?.id !== user._id) {
-        console.log('[NOTIFICATIONS] Adding chat message notification for user:', user._id);
+      if (message.from?.id !== (user.id || user._id)) {
+        console.log('[NOTIFICATIONS] Adding chat message notification for user:', user.id || user._id);
         addRealtimeNotification({
           id: `chat_${Date.now()}`,
           type: 'chat',
@@ -95,8 +104,8 @@ export const NotificationProvider = ({ children }) => {
     socket.on('notification:chat', (notification) => {
       console.log('[NOTIFICATIONS] Received notification:chat:', notification);
       // Only show notification if it's not from the current user
-      if (notification.from?.id !== user._id) {
-        console.log('[NOTIFICATIONS] Adding chat notification for user:', user._id);
+      if (notification.from?.id !== (user.id || user._id)) {
+        console.log('[NOTIFICATIONS] Adding chat notification for user:', user.id || user._id);
         addRealtimeNotification({
           id: `chat_notification_${Date.now()}`,
           type: 'chat',
@@ -140,7 +149,7 @@ export const NotificationProvider = ({ children }) => {
     });
 
     return () => {
-      socket.emit('notification:leave', { userId: user._id });
+      socket.emit('notification:leave', { userId: user.id || user._id });
       socket.off('chat:message');
       socket.off('notification:chat');
       socket.off('notification:booking');

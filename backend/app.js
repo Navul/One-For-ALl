@@ -5,11 +5,21 @@ console.log('Current working directory:', process.cwd());
 // Load environment variables
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
-// Set CLIENT_URL based on environment
-if (process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL) {
-    // For Render deployment, use the current host
-    process.env.CLIENT_URL = process.env.RENDER_EXTERNAL_URL || 'https://one-for-all-6lpg.onrender.com';
+// Dynamic CLIENT_URL configuration based on environment
+let CLIENT_URL;
+if (process.env.NODE_ENV === 'production') {
+    // Production: Use Render URL
+    CLIENT_URL = process.env.RENDER_EXTERNAL_URL || 'https://one-for-all-6lpg.onrender.com';
+} else {
+    // Development: Use localhost or environment variable
+    CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 }
+
+// Set the CLIENT_URL in process.env for consistency
+process.env.CLIENT_URL = CLIENT_URL;
+
+console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+console.log(`🔗 Client URL: ${CLIENT_URL}`);
 
 // Verify environment variables are loaded
 console.log('MONGO_URI available:', process.env.MONGO_URI ? 'Yes' : 'No');
@@ -340,6 +350,7 @@ const negotiationRoutes = require('./routes/negotiationRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const instantServiceRoutes = require('./routes/instantServiceRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 console.log('🚀 Loading routes...');
 serviceRoutes(app);
@@ -351,7 +362,9 @@ app.use('/api/negotiations', negotiationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/instant-services', instantServiceRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/chat', chatRoutes);
 console.log('📋 Booking routes loaded');
+console.log('💬 Chat routes loaded');
 console.log('📍 Instant services routes loaded');
 console.log('✅ All routes loaded successfully');
 

@@ -13,7 +13,11 @@ const chatMessageSchema = new mongoose.Schema({
     role: { type: String }
   },
   message: { type: String, required: true },
-  timestamp: { type: Date, default: Date.now }
+  timestamp: { type: Date, default: Date.now },
+  readBy: [{ 
+    userId: { type: String, required: true },
+    readAt: { type: Date, default: Date.now }
+  }]
 });
 
 module.exports = mongoose.model('ChatMessage', chatMessageSchema);

@@ -56,7 +56,7 @@ const Chats = () => {
     const toUser = user.role === 'provider' ? activeChat.user : activeChat.service?.provider;
     const msg = {
       bookingId: activeChat._id,
-      from: { id: user._id, name: user.name, role: user.role },
+      from: { id: user.id || user._id, name: user.name, role: user.role },
       to: { id: toUser?._id, name: toUser?.name, role: toUser?.role || (user.role === 'provider' ? 'client' : 'provider') },
       message: chatInput.trim(),
     };
@@ -111,11 +111,11 @@ const Chats = () => {
                   <div style={{ textAlign: 'center', color: '#888' }}>No messages yet.</div>
                 ) : (
                   chatMessages.map((msg, idx) => (
-                    <div key={idx} style={{ marginBottom: 8, textAlign: msg.from?.id === user._id ? 'right' : 'left' }}>
+                    <div key={idx} style={{ marginBottom: 8, textAlign: msg.from?.id === (user.id || user._id) ? 'right' : 'left' }}>
                       <span style={{
                         display: 'inline-block',
-                        background: msg.from?.id === user._id ? '#2563eb' : '#e5e7eb',
-                        color: msg.from?.id === user._id ? 'white' : '#1f2937',
+                        background: msg.from?.id === (user.id || user._id) ? '#2563eb' : '#e5e7eb',
+                        color: msg.from?.id === (user.id || user._id) ? 'white' : '#1f2937',
                         borderRadius: 8,
                         padding: '6px 12px',
                         fontSize: 13,

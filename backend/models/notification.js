@@ -35,7 +35,8 @@ const notificationSchema = new mongoose.Schema({
       'SERVICE_BOOKED',
       'SERVICE_UPDATE',
       'SYSTEM_UPDATE',
-      'PROVIDER_RESPONSE'
+      'PROVIDER_RESPONSE',
+      'chat'
     ],
     required: true
   },
