@@ -314,13 +314,36 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from React build
-const buildPath = path.join(__dirname, '../frontend/build');
-console.log('Serving static files from:', buildPath);
-console.log('Build path exists:', require('fs').existsSync(buildPath));
+const fs = require('fs');
 
-// Check if build directory exists
-if (require('fs').existsSync(buildPath)) {
-    console.log('✅ Build directory found, serving static files');
+// Try multiple possible build paths for different deployment scenarios
+const possibleBuildPaths = [
+    path.join(__dirname, '../frontend/build'),           // Local development
+    path.join(__dirname, '../../frontend/build'),        // Alternative structure
+    path.join(process.cwd(), 'frontend/build'),          // From project root
+    path.join(__dirname, '../build'),                    // If build is moved up
+    path.join(process.cwd(), 'build')                    // Build in root
+];
+
+let buildPath = null;
+for (const tryPath of possibleBuildPaths) {
+    if (fs.existsSync(tryPath) && fs.existsSync(path.join(tryPath, 'index.html'))) {
+        buildPath = tryPath;
+        break;
+    }
+}
+
+console.log('Checking build paths:');
+possibleBuildPaths.forEach(p => {
+    const exists = fs.existsSync(p);
+    const hasIndex = exists && fs.existsSync(path.join(p, 'index.html'));
+    console.log(`  ${p}: exists=${exists}, has index.html=${hasIndex}`);
+});
+
+if (buildPath) {
+    console.log('✅ Build directory found at:', buildPath);
+    console.log('✅ index.html exists at:', path.join(buildPath, 'index.html'));
+    
     app.use(express.static(buildPath, {
         maxAge: '1d',
         setHeaders: (res, filePath) => {
@@ -337,7 +360,8 @@ if (require('fs').existsSync(buildPath)) {
         }
     }));
 } else {
-    console.log('❌ Build directory not found at:', buildPath);
+    console.log('❌ No build directory found in any of these locations:');
+    possibleBuildPaths.forEach(p => console.log(`  ${p}`));
 }
 
 // Routes
@@ -416,13 +440,13 @@ app.use('/api', (req, res, next) => {
 app.use((req, res) => {
     // Only serve React for GET requests that don't start with /api/
     if (req.method === 'GET' && !req.path.startsWith('/api/')) {
-        const indexPath = path.join(__dirname, '../frontend/build', 'index.html');
-        if (require('fs').existsSync(indexPath)) {
+        if (buildPath) {
+            const indexPath = path.join(buildPath, 'index.html');
             console.log('📄 Serving index.html for:', req.path);
             res.sendFile(indexPath);
         } else {
-            console.log('❌ index.html not found at:', indexPath);
-            res.status(404).send('Frontend build not found');
+            console.log('❌ No build path available, cannot serve index.html');
+            res.status(404).send('Frontend build not found - build path not configured');
         }
     } else {
         res.status(404).json({ error: 'Endpoint not found', method: req.method, path: req.path });
