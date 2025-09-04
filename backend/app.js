@@ -5,6 +5,12 @@ console.log('Current working directory:', process.cwd());
 // Load environment variables
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
+// Set CLIENT_URL based on environment
+if (process.env.NODE_ENV === 'production' && !process.env.CLIENT_URL) {
+    // For Render deployment, use the current host
+    process.env.CLIENT_URL = process.env.RENDER_EXTERNAL_URL || 'https://one-for-all-6lpg.onrender.com';
+}
+
 // Verify environment variables are loaded
 console.log('MONGO_URI available:', process.env.MONGO_URI ? 'Yes' : 'No');
 const express = require('express');
@@ -293,6 +299,33 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from React build
+const buildPath = path.join(__dirname, '../frontend/build');
+console.log('Serving static files from:', buildPath);
+console.log('Build path exists:', require('fs').existsSync(buildPath));
+
+// Check if build directory exists
+if (require('fs').existsSync(buildPath)) {
+    console.log('✅ Build directory found, serving static files');
+    app.use(express.static(buildPath, {
+        maxAge: '1d',
+        setHeaders: (res, filePath) => {
+            console.log('📁 Serving file:', path.relative(buildPath, filePath));
+            if (filePath.endsWith('.js')) {
+                res.setHeader('Content-Type', 'application/javascript');
+            } else if (filePath.endsWith('.css')) {
+                res.setHeader('Content-Type', 'text/css');
+            } else if (filePath.endsWith('.html')) {
+                res.setHeader('Content-Type', 'text/html');
+            } else if (filePath.endsWith('.json')) {
+                res.setHeader('Content-Type', 'application/json');
+            }
+        }
+    }));
+} else {
+    console.log('❌ Build directory not found at:', buildPath);
+}
+
 // Request logging middleware
 app.use((req, res, next) => {
     console.log(`🌐 ${req.method} ${req.url} - ${new Date().toISOString()}`);
@@ -354,6 +387,29 @@ app.post('/api/bookings/test-post', (req, res) => {
 // Test login route accessibility
 app.get('/api/auth/test', (req, res) => {
     res.json({ success: true, message: 'Auth routes are accessible!' });
+});
+
+// Error handling middleware for API routes
+app.use('/api', (req, res, next) => {
+    // If we reach here, the API route wasn't found
+    res.status(404).json({ error: 'API endpoint not found', path: req.path });
+});
+
+// Catch-all handler: send back React's index.html file for any non-API routes
+app.use((req, res) => {
+    // Only serve React for GET requests that don't start with /api/
+    if (req.method === 'GET' && !req.path.startsWith('/api/')) {
+        const indexPath = path.join(__dirname, '../frontend/build', 'index.html');
+        if (require('fs').existsSync(indexPath)) {
+            console.log('📄 Serving index.html for:', req.path);
+            res.sendFile(indexPath);
+        } else {
+            console.log('❌ index.html not found at:', indexPath);
+            res.status(404).send('Frontend build not found');
+        }
+    } else {
+        res.status(404).json({ error: 'Endpoint not found', method: req.method, path: req.path });
+    }
 });
 
 // Start the server

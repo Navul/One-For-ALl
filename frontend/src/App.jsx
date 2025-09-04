@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ModalProvider } from './context/ModalContext';
+import { NotificationProvider } from './context/NotificationContext';
 import ChatModal from './components/ChatModal';
 import Home from './pages/Home';
 import ProviderHome from './pages/ProviderHome';
@@ -24,20 +25,20 @@ import AdminDashboard from './pages/AdminDashboard';
 import BannedUsers from './pages/BannedUsers';
 import ManageServices from './pages/ManageServices';
 import MyServices from './pages/MyServices';
-import Chats from './pages/Chats';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/NavbarNew';
 
 const App = () => {
     return (
         <AuthProvider>
-            <ModalProvider>
-                <Router future={{ 
-                    v7_startTransition: true,
-                    v7_relativeSplatPath: true
-                }}>
-                    <Navbar />
-                    <Routes>
+            <NotificationProvider>
+                <ModalProvider>
+                    <Router future={{ 
+                        v7_startTransition: true,
+                        v7_relativeSplatPath: true
+                    }}>
+                        <Navbar />
+                        <Routes>
                     {/* Public routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
@@ -194,6 +195,9 @@ const App = () => {
                     <ChatModal />
                 </Router>
             </ModalProvider>
-        </AuthProvider>
-    );
-};export default App;
+        </NotificationProvider>
+    </AuthProvider>
+);
+};
+
+export default App;

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: one-for-all
+    env: node
+    plan: free
+    buildCommand: npm run install-all && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        fromService:
+          type: web
+          name: one-for-all
+          property: url
+    healthCheckPath: /test
