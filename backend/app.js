@@ -18,23 +18,15 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: [
-            process.env.CLIENT_URL || 'http://localhost:3000',
-            'http://localhost:3001',
-            'https://one-for-all-6lpg.onrender.com'
-        ],
+        origin: process.env.CLIENT_URL,
         credentials: true
     }
 });
 
 // Enable CORS for frontend before any routes or session middleware
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'https://one-for-all-6lpg.onrender.com'
-  ],
-  credentials: true
+    origin: process.env.CLIENT_URL,
+    credentials: true
 }));
 
 // Add CORS debugging
@@ -314,6 +306,6 @@ app.get('/api/auth/test', (req, res) => {
 
 // Start the server
 server.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+    console.log(`🚀 Server is running on ${process.env.CLIENT_URL || 'http://localhost'}:${PORT}`);
     console.log('📡 Socket.IO enabled for real-time instant services');
 });
