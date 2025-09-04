@@ -1,6 +1,51 @@
 # Ignore node modules
 node_modules/
-# Ignore environment files
+
+# Environment files (SECURITY - NEVER COMMIT THESE)
 .env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+*.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Config files that might contain secrets
+config/secrets.js
+config/local.js
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.cert
+
 # Ignore macOS system files
 .DS_Store
+.DS_Store?
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

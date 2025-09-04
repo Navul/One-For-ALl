@@ -1,12 +1,17 @@
 # Ignore node modules
 node_modules/
 
-# Ignore environment files
+# Ignore environment files (SECURITY - NEVER COMMIT THESE)
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.production
 .env.production.local
+.env.staging
+*.env
 
 # Build directories
 build/
@@ -42,3 +47,4 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+frontend/.env.production
