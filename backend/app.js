@@ -40,8 +40,31 @@ const io = socketIo(server, {
 });
 
 // Enable CORS for frontend before any routes or session middleware
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    'http://localhost:3000',
+    'https://one-for-all-6lpg.onrender.com',
+    'https://one-for-all-8u10.onrender.com'
+];
+
 app.use(cors({
-    origin: process.env.CLIENT_URL,
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        
+        // Check if origin is in allowed list
+        if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+            return callback(null, true);
+        }
+        
+        // For production, allow any render.com domain
+        if (process.env.NODE_ENV === 'production' && origin.includes('.onrender.com')) {
+            return callback(null, true);
+        }
+        
+        console.log('❌ CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 
@@ -439,11 +462,22 @@ app.use('/api', (req, res, next) => {
 
 // Catch-all handler: send back React's index.html file for any non-API routes
 app.use((req, res) => {
-    // Only serve React for GET requests that don't start with /api/
+    // Only serve React for GET requests that don't start with /api/ and aren't static files
     if (req.method === 'GET' && !req.path.startsWith('/api/')) {
+        // Don't serve index.html for static file requests (they should 404 if not found)
+        const staticExtensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg', '.woff', '.woff2', '.ttf', '.eot', '.map'];
+        const isStaticFile = staticExtensions.some(ext => req.path.toLowerCase().endsWith(ext));
+        
+        if (isStaticFile) {
+            console.log('❌ Static file not found:', req.path);
+            res.status(404).send('Static file not found');
+            return;
+        }
+        
+        // Serve index.html for client-side routing
         if (buildPath) {
             const indexPath = path.join(buildPath, 'index.html');
-            console.log('📄 Serving index.html for:', req.path, 'from:', indexPath);
+            console.log('📄 Serving index.html for client-side route:', req.path);
             res.sendFile(indexPath);
         } else {
             console.log('❌ No build path available, cannot serve index.html');
