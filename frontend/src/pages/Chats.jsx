@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
-
-const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL || 'http://localhost:5000';
+import { SOCKET_SERVER_URL } from '../utils/api';
 
 const Chats = () => {
   const { user } = useAuth();

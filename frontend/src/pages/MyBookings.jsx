@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { getUserBookings, updateBookingStatus } from '../services/bookingService';
 import RatingModal from '../components/RatingModal'; // eslint-disable-line no-unused-vars
+import { apiRequestJSON, ENDPOINTS } from '../utils/api';
 
 const MyBookings = () => {
   const { user } = useAuth(); // eslint-disable-line no-unused-vars
@@ -68,7 +69,7 @@ const MyBookings = () => {
   const createTestBooking = async () => { // eslint-disable-line no-unused-vars
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/bookings/debug/create-test`, {
+      const response = await apiRequestJSON('/api/bookings/debug/create-test', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

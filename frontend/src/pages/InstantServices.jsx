@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import GoogleMap from '../components/GoogleMap';
 import LocationPermission from '../components/LocationPermission';
+import { SOCKET_SERVER_URL } from '../utils/api';
 // All hooks and logic must be inside the component. No code here.
-
-const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL || 'http://localhost:5000';
 const InstantServices = ({ userRole = 'client' }) => {
     // Provider: Real-time open requests
     const [openRequests, setOpenRequests] = useState([]);
