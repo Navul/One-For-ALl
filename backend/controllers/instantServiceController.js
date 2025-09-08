@@ -312,6 +312,35 @@ const getProviderInstantRequests = async (req, res) => {
     }
 };
 
+// Debug endpoint - get all instant service requests (temporary)
+const getAllInstantServiceRequests = async (req, res) => {
+    try {
+        const InstantServiceRequest = require('../models/instantServiceRequest');
+        
+        const requests = await InstantServiceRequest.find({})
+            .populate('client.userId', 'name email')
+            .populate('provider.userId', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(20);
+            
+        console.log('🔍 DEBUG: Found', requests.length, 'total instant service requests');
+        
+        res.status(200).json({
+            success: true,
+            data: requests,
+            total: requests.length,
+            debug: true
+        });
+    } catch (error) {
+        console.error('Error getting all instant services:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to get all instant services',
+            error: error.message 
+        });
+    }
+};
+
 // Toggle instant service availability
 const toggleInstantServiceAvailability = async (req, res) => {
     try {
@@ -333,11 +362,173 @@ const toggleInstantServiceAvailability = async (req, res) => {
     }
 };
 
+// Get all instant service requests (with pagination and filters)
+const getAllInstantServices = async (req, res) => {
+    try {
+        const InstantServiceRequest = require('../models/instantServiceRequest');
+        
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const status = req.query.status;
+        const type = req.query.type;
+        
+        const filter = {};
+        if (status) filter.status = status;
+        if (type) filter.type = type;
+        
+        const requests = await InstantServiceRequest.find(filter)
+            .populate('client.userId', 'name email')
+            .populate('provider.userId', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit);
+            
+        const total = await InstantServiceRequest.countDocuments(filter);
+        
+        res.status(200).json({
+            success: true,
+            data: requests,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error getting instant services:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to get instant services',
+            error: error.message 
+        });
+    }
+};
+
+// Get user's instant service requests (both as client and provider)
+const getMyInstantServices = async (req, res) => {
+    try {
+        const InstantServiceRequest = require('../models/instantServiceRequest');
+        const userId = req.user._id || req.user.id; // Handle both _id and id
+        
+        console.log('🔍 Getting instant services for user:', userId);
+        
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const role = req.query.role; // 'client' or 'provider'
+        
+        let filter = {};
+        
+        if (role === 'client') {
+            filter = {
+                $or: [
+                    { 'client.userId': userId },
+                    { 'client.socketId': { $exists: true } } // Also include socket-based clients for now
+                ]
+            };
+        } else if (role === 'provider') {
+            filter = {
+                $or: [
+                    { 'provider.userId': userId },
+                    { 'provider.socketId': { $exists: true } } // Also include socket-based providers
+                ]
+            };
+        } else {
+            // Both client and provider - include socket-based requests too
+            filter = {
+                $or: [
+                    { 'client.userId': userId },
+                    { 'provider.userId': userId },
+                    { 'client.socketId': { $exists: true } }, // Show all socket-based requests for debugging
+                    { 'provider.socketId': { $exists: true } }
+                ]
+            };
+        }
+        
+        console.log('📊 Filter being used:', JSON.stringify(filter, null, 2));
+        
+        const requests = await InstantServiceRequest.find(filter)
+            .populate('client.userId', 'name email')
+            .populate('provider.userId', 'name email')
+            .populate('negotiation.negotiationId')
+            .sort({ createdAt: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit);
+            
+        console.log('📋 Found requests:', requests.length);
+        requests.forEach((req, index) => {
+            console.log(`Request ${index + 1}:`, {
+                id: req._id,
+                type: req.type,
+                status: req.status,
+                client: req.client,
+                createdAt: req.createdAt
+            });
+        });
+        
+        const total = await InstantServiceRequest.countDocuments(filter);
+        
+        res.status(200).json({
+            success: true,
+            data: requests,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error getting my instant services:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to get your instant services',
+            error: error.message 
+        });
+    }
+};
+
+// Get specific instant service by ID
+const getInstantServiceById = async (req, res) => {
+    try {
+        const InstantServiceRequest = require('../models/instantServiceRequest');
+        const { id } = req.params;
+        
+        const request = await InstantServiceRequest.findOne({ requestId: id })
+            .populate('client.userId', 'name email phone')
+            .populate('provider.userId', 'name email phone')
+            .populate('negotiation.negotiationId');
+            
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                message: 'Instant service request not found'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            data: request
+        });
+    } catch (error) {
+        console.error('Error getting instant service by ID:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to get instant service',
+            error: error.message 
+        });
+    }
+};
+
 module.exports = {
     requestInstantService,
     getAvailableInstantServices,
     acceptInstantService,
     updateServiceStatus,
     getProviderInstantRequests,
-    toggleInstantServiceAvailability
+    toggleInstantServiceAvailability,
+    getAllInstantServices,
+    getMyInstantServices,
+    getInstantServiceById,
+    getAllInstantServiceRequests
 };

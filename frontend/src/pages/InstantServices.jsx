@@ -47,10 +47,16 @@ const InstantServices = ({ userRole = 'client' }) => {
             setError('Please enter a valid phone number.');
             return;
         }
+        
+        // Ensure details are provided or use default based on service type
+        const details = requestNotes && requestNotes.trim() 
+            ? requestNotes.trim() 
+            : `I need ${requestType} service`;
+        
         setRequestSubmitting(true);
         socketRef.current.emit('request:post', {
             type: requestType,
-            details: requestNotes,
+            details: details,
             phone: requestPhone,
             lat: userLocation.lat,
             lng: userLocation.lng,
@@ -64,7 +70,7 @@ const InstantServices = ({ userRole = 'client' }) => {
                 setRequestNotes('');
                 setRequestPhone('');
             } else {
-                setError('Failed to post request.');
+                setError(res?.message || 'Failed to post request.');
             }
         });
     };

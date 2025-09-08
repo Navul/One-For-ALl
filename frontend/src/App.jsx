@@ -16,6 +16,7 @@ import ServiceDetails from './pages/ServiceDetails';
 import NegotiationsDashboard from './pages/NegotiationsDashboard';
 import Notifications from './pages/Notifications';
 import MyBookings from './pages/MyBookings';
+import InstantServiceHistory from './pages/InstantServiceHistory';
 import BookedPrograms from './pages/BookedPrograms';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -126,6 +127,16 @@ const App = () => {
                         element={
                             <ProtectedRoute allowedRoles={['user', 'provider', 'admin']}>
                                 <MyBookings />
+                            </ProtectedRoute>
+                        }
+                    />
+                    
+                    {/* Instant Service History route */}
+                    <Route 
+                        path="/instant-service-history" 
+                        element={
+                            <ProtectedRoute allowedRoles={['user', 'provider', 'admin']}>
+                                <InstantServiceHistory />
                             </ProtectedRoute>
                         }
                     />

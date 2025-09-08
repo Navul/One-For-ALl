@@ -231,14 +231,25 @@ const Navbar = () => {
                                                         </Link>
 
                                                         {(user?.role === 'customer' || user?.role === 'user') && (
-                                                            <Link 
-                                                                to="/my-bookings" 
-                                                                className={`dropdown-item ${location.pathname === '/my-bookings' ? 'active' : ''}`}
-                                                                onClick={closeMenu}
-                                                            >
-                                                                <span className="item-icon">📅</span>
-                                                                My Bookings
-                                                            </Link>
+                                                            <>
+                                                                <Link 
+                                                                    to="/my-bookings" 
+                                                                    className={`dropdown-item ${location.pathname === '/my-bookings' ? 'active' : ''}`}
+                                                                    onClick={closeMenu}
+                                                                >
+                                                                    <span className="item-icon">📅</span>
+                                                                    My Bookings
+                                                                </Link>
+                                                                
+                                                                <Link 
+                                                                    to="/instant-service-history" 
+                                                                    className={`dropdown-item ${location.pathname === '/instant-service-history' ? 'active' : ''}`}
+                                                                    onClick={closeMenu}
+                                                                >
+                                                                    <span className="item-icon">⚡</span>
+                                                                    Instant Service History
+                                                                </Link>
+                                                            </>
                                                         )}
 
                                                         {user?.role === 'provider' && (
@@ -258,6 +269,14 @@ const Navbar = () => {
                                                                 >
                                                                     <span className="item-icon">📋</span>
                                                                     Booked Programs
+                                                                </Link>
+                                                                <Link 
+                                                                    to="/instant-service-history" 
+                                                                    className={`dropdown-item ${location.pathname === '/instant-service-history' ? 'active' : ''}`}
+                                                                    onClick={closeMenu}
+                                                                >
+                                                                    <span className="item-icon">⚡</span>
+                                                                    Instant Service History
                                                                 </Link>
                                                             </>
                                                         )}

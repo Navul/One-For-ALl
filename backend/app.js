@@ -85,9 +85,50 @@ connectDB();
 // --- Real-time instant services: global user presence tracking ---
 
 const onlineUsers = {};
-// In-memory store for open instant service requests
+// Import database model for instant service requests
+const InstantServiceRequest = require('./models/instantServiceRequest');
+// Keep in-memory cache for quick access, but sync with database
 const openRequests = {}; // { requestId: { ...request, status, acceptedBy } }
 const { v4: uuidv4 } = require('uuid');
+
+// Function to load active requests from database into memory
+async function loadActiveRequestsFromDB() {
+    try {
+        const activeRequests = await InstantServiceRequest.find({
+            status: { $in: ['open', 'accepted'] }
+        });
+        
+        console.log(`📋 Loading ${activeRequests.length} active instant service requests from database...`);
+        
+        for (const dbRequest of activeRequests) {
+            const requestData = {
+                id: dbRequest.requestId,
+                type: dbRequest.type,
+                details: dbRequest.details,
+                phone: dbRequest.phone,
+                lat: dbRequest.location.lat,
+                lng: dbRequest.location.lng,
+                clientId: dbRequest.client.socketId,
+                clientName: dbRequest.client.name,
+                status: dbRequest.status,
+                acceptedBy: dbRequest.provider ? {
+                    providerId: dbRequest.provider.socketId,
+                    providerName: dbRequest.provider.name
+                } : null,
+                createdAt: dbRequest.createdAt.getTime()
+            };
+            
+            openRequests[dbRequest.requestId] = requestData;
+        }
+        
+        console.log(`✅ Loaded ${Object.keys(openRequests).length} requests into memory cache`);
+    } catch (error) {
+        console.error('❌ Error loading requests from database:', error);
+    }
+}
+
+// Load requests when server starts
+loadActiveRequestsFromDB();
 
 
 
@@ -214,15 +255,32 @@ io.on('connection', (socket) => {
         }
     });
     // Provider marks a request as completed
-    socket.on('request:complete', ({ requestId }, callback) => {
-        const req = openRequests[requestId];
-        if (!req || req.status !== 'accepted') {
-            if (callback) callback({ success: false, message: 'Request not found or not accepted.' });
-            return;
+    socket.on('request:complete', async ({ requestId }, callback) => {
+        try {
+            const req = openRequests[requestId];
+            if (!req || req.status !== 'accepted') {
+                if (callback) callback({ success: false, message: 'Request not found or not accepted.' });
+                return;
+            }
+            
+            // Update database
+            await InstantServiceRequest.findOneAndUpdate(
+                { requestId: requestId },
+                {
+                    status: 'completed',
+                    completedAt: new Date()
+                }
+            );
+            
+            // Update memory cache
+            req.status = 'completed';
+            broadcastRequests();
+            
+            if (callback) callback({ success: true });
+        } catch (error) {
+            console.error('Error completing instant service request:', error);
+            if (callback) callback({ success: false, message: 'Failed to complete request' });
         }
-        req.status = 'completed';
-        broadcastRequests();
-        if (callback) callback({ success: true });
     });
     console.log('👤 User connected:', socket.id);
 
@@ -262,43 +320,105 @@ io.on('connection', (socket) => {
     }
 
     // Client posts a new instant service request
-    socket.on('request:post', (data, callback) => {
-        // data: { type, details, phone, lat, lng, clientId, clientName }
-        if (!data.phone || typeof data.phone !== 'string' || data.phone.trim().length < 6) {
-            if (callback) callback({ success: false, message: 'Phone number required.' });
-            return;
+    socket.on('request:post', async (data, callback) => {
+        try {
+            // data: { type, details, phone, lat, lng, clientId, clientName }
+            if (!data.phone || typeof data.phone !== 'string' || data.phone.trim().length < 6) {
+                if (callback) callback({ success: false, message: 'Phone number required.' });
+                return;
+            }
+            
+            // Ensure details is not empty
+            const details = data.details && data.details.trim() ? data.details.trim() : `${data.type} service request`;
+            
+            const requestId = uuidv4();
+            
+            // Create database record
+            const instantServiceRequest = new InstantServiceRequest({
+                requestId: requestId,
+                type: data.type,
+                details: details,
+                phone: data.phone,
+                location: {
+                    lat: data.lat,
+                    lng: data.lng
+                },
+                client: {
+                    socketId: data.clientId,
+                    name: data.clientName
+                },
+                status: 'open'
+            });
+            
+            await instantServiceRequest.save();
+            
+            // Also keep in memory cache for real-time updates
+            const requestData = {
+                id: requestId,
+                type: data.type,
+                details: details,
+                phone: data.phone,
+                lat: data.lat,
+                lng: data.lng,
+                clientId: data.clientId,
+                clientName: data.clientName,
+                status: 'open',
+                acceptedBy: null,
+                createdAt: Date.now()
+            };
+            
+            openRequests[requestId] = requestData;
+            broadcastRequests();
+            
+            if (callback) callback({ success: true, id: requestId });
+        } catch (error) {
+            console.error('Error creating instant service request:', error);
+            if (callback) callback({ success: false, message: 'Failed to create request' });
         }
-        const requestId = uuidv4();
-        openRequests[requestId] = {
-            id: requestId,
-            type: data.type,
-            details: data.details,
-            phone: data.phone,
-            lat: data.lat,
-            lng: data.lng,
-            clientId: data.clientId,
-            clientName: data.clientName,
-            status: 'open',
-            acceptedBy: null,
-            createdAt: Date.now()
-        };
-        broadcastRequests();
-        if (callback) callback({ success: true, id: requestId });
     });
 
     // Provider accepts a request (first come, first serve)
-    socket.on('request:accept', ({ requestId, providerId, providerName }, callback) => {
-        const req = openRequests[requestId];
-        if (!req || req.status !== 'open') {
-            if (callback) callback({ success: false, message: 'Request already accepted or not found.' });
-            return;
+    socket.on('request:accept', async ({ requestId, providerId, providerName }, callback) => {
+        try {
+            const req = openRequests[requestId];
+            if (!req || req.status !== 'open') {
+                if (callback) callback({ success: false, message: 'Request already accepted or not found.' });
+                return;
+            }
+            
+            // Update database
+            const dbRequest = await InstantServiceRequest.findOneAndUpdate(
+                { requestId: requestId, status: 'open' },
+                {
+                    status: 'accepted',
+                    acceptedAt: new Date(),
+                    provider: {
+                        socketId: providerId,
+                        name: providerName
+                    }
+                },
+                { new: true }
+            );
+            
+            if (!dbRequest) {
+                if (callback) callback({ success: false, message: 'Request not found or already accepted.' });
+                return;
+            }
+            
+            // Update memory cache
+            req.status = 'accepted';
+            req.acceptedBy = { providerId, providerName };
+            
+            broadcastRequests();
+            
+            // Notify client who posted the request
+            io.to(req.clientId).emit('request:accepted', { ...req });
+            
+            if (callback) callback({ success: true });
+        } catch (error) {
+            console.error('Error accepting instant service request:', error);
+            if (callback) callback({ success: false, message: 'Failed to accept request' });
         }
-        req.status = 'accepted';
-        req.acceptedBy = { providerId, providerName };
-        broadcastRequests();
-        // Notify client who posted the request
-        io.to(req.clientId).emit('request:accepted', { ...req });
-        if (callback) callback({ success: true });
     });
 
     // Send open and accepted-by-me requests to new provider connections
