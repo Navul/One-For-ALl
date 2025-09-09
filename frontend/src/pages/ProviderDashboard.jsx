@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import ProviderReviews from '../components/ProviderReviews';
 // import ProviderNotifications from '../components/ProviderNotifications';
 
 function AddServiceForm({ onServiceAdded, onClose }) {
@@ -140,6 +141,9 @@ const ProviderDashboard = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddService, setShowAddService] = useState(false);
+
+    console.log('🏪 ProviderDashboard - Current user:', user);
+    console.log('🎫 ProviderDashboard - Token in localStorage:', localStorage.getItem('token') ? 'Exists' : 'Missing');
 
     useEffect(() => {
         fetchProviderData();
@@ -355,13 +359,18 @@ const ProviderDashboard = () => {
                             <p className="no-data">No services yet. Add your first service to get started!</p>
                         )}
                     </div>
+
+                    {/* Customer Reviews Section */}
+                    <div className="reviews-section">
+                        <ProviderReviews />
+                    </div>
                 </div>
 
                 {/* Provider Notifications Section - temporarily disabled until notifications API is ready */}
                 {/* <ProviderNotifications /> */}
             </main>
 
-            <style jsx>{`
+            <style jsx="true">{`
                 .dashboard {
                     min-height: 100vh;
                     background-color: #f7fafc;
@@ -422,7 +431,8 @@ const ProviderDashboard = () => {
                 }
 
                 .stats-section,
-                .services-section {
+                .services-section,
+                .reviews-section {
                     background: white;
                     padding: 1.5rem;
                     border-radius: 8px;

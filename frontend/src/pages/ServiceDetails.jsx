@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import BargainSystem from '../components/BargainSystem';
+import ReviewsSection from '../components/ReviewsSection';
 
 const ServiceDetails = () => {
     const { serviceId } = useParams();
@@ -280,6 +281,13 @@ const ServiceDetails = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            {/* Reviews Section */}
+            <div className="row mt-5">
+                <div className="col-12">
+                    <ReviewsSection serviceId={serviceId} />
                 </div>
             </div>
         </div>

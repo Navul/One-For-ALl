@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import ReviewModal from '../components/ReviewModal';
 
 const InstantServiceHistory = () => {
   const { user } = useAuth();
@@ -8,6 +9,10 @@ const InstantServiceHistory = () => {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, confirmed, completed, cancelled
   const [sortBy, setSortBy] = useState('newest');
+
+  // Review modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewService, setReviewService] = useState(null);
 
   useEffect(() => {
     fetchInstantServices();
@@ -151,6 +156,18 @@ const InstantServiceHistory = () => {
       case 'cancelled': return '#ef4444';
       default: return '#6b7280';
     }
+  };
+
+  // Handle opening review modal
+  const handleWriteReview = (service) => {
+    setReviewService(service);
+    setShowReviewModal(true);
+  };
+
+  // Handle review submission
+  const handleReviewSubmitted = () => {
+    fetchInstantServices(); // Refresh services after review submission
+    setReviewService(null);
   };
 
   const getStatusIcon = (status) => {
@@ -547,9 +564,57 @@ const InstantServiceHistory = () => {
                   </span>
                 </div>
               )}
+
+              {/* Review Button for completed services */}
+              {service.status === 'completed' && (
+                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                  <button
+                    onClick={() => handleWriteReview(service)}
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '8px',
+                      fontSize: '0.875rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.opacity = '0.9';
+                      e.target.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.opacity = '1';
+                      e.target.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    ⭐ Write Review
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && reviewService && (
+        <ReviewModal
+          isOpen={showReviewModal}
+          onClose={() => {
+            setShowReviewModal(false);
+            setReviewService(null);
+          }}
+          serviceId={reviewService._id || reviewService.service?._id || 'instant-service'}
+          serviceName={reviewService.service?.title || `${reviewService.type} Service` || 'Instant Service'}
+          booking={reviewService}
+          onReviewSubmitted={handleReviewSubmitted}
+        />
       )}
     </div>
   );

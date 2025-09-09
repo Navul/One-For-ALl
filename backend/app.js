@@ -74,7 +74,7 @@ app.use((req, res, next) => {
     next();
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 
 // Log the MONGO_URI for debugging
 console.log('MONGO_URI:', process.env.MONGO_URI);
@@ -519,6 +519,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const instantServiceRoutes = require('./routes/instantServiceRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 console.log('🚀 Loading routes...');
 serviceRoutes(app);
@@ -531,9 +532,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/instant-services', instantServiceRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/reviews', reviewRoutes);
 console.log('📋 Booking routes loaded');
 console.log('💬 Chat routes loaded');
 console.log('📍 Instant services routes loaded');
+console.log('⭐ Review routes loaded');
 console.log('✅ All routes loaded successfully');
 
 // Request logging middleware (moved after static files and routes)
@@ -617,6 +620,6 @@ app.use((req, res) => {
 
 // Start the server
 server.listen(PORT, () => {
-    console.log(`🚀 Server is running on ${process.env.CLIENT_URL || 'http://localhost'}:${PORT}`);
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
     console.log('📡 Socket.IO enabled for real-time instant services');
 });

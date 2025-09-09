@@ -1,6 +1,8 @@
 import React, { useState, useContext } from 'react';
 import AuthContext from '../context/AuthContext';
 import BargainSystem from './BargainSystem';
+import StarRating from './StarRating';
+import useProviderRating from '../hooks/useProviderRating';
 
 const ServiceCardWithBargain = ({ 
   service, 
@@ -12,6 +14,10 @@ const ServiceCardWithBargain = ({
 }) => {
   const { user } = useContext(AuthContext);
   const [showBargain, setShowBargain] = useState(false);
+  
+  // Fetch provider rating
+  const providerId = service.provider?._id || service.provider;
+  const { rating: providerRating, loading: ratingLoading } = useProviderRating(providerId);
 
   const categories = [
     { id: 'cleaning', name: 'Cleaning', icon: '🧹' },
@@ -125,14 +131,42 @@ const ServiceCardWithBargain = ({
 
       <div style={{ marginBottom: '1rem' }}>
         {service.provider && (
-          <p style={{ 
-            fontSize: '0.9rem', 
-            color: '#6b7280', 
-            margin: '0 0 0.5rem 0',
-            fontStyle: 'italic'
-          }}>
-            Provider: {service.provider.name}
-          </p>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              flexWrap: 'wrap'
+            }}>
+              <p style={{ 
+                fontSize: '0.9rem', 
+                color: '#6b7280', 
+                margin: 0,
+                fontStyle: 'italic'
+              }}>
+                Provider: {service.provider.name}
+              </p>
+              
+              {!ratingLoading && providerRating && (
+                <StarRating
+                  rating={providerRating.averageRating}
+                  totalReviews={providerRating.totalReviews}
+                  size="small"
+                  showCount={true}
+                  showEmptyStars={true}
+                />
+              )}
+              
+              {ratingLoading && (
+                <span style={{
+                  fontSize: '0.75rem',
+                  color: '#9ca3af'
+                }}>
+                  Loading rating...
+                </span>
+              )}
+            </div>
+          </div>
         )}
         
         {service.rating && service.rating.averageRating > 0 && (

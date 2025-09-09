@@ -5,6 +5,7 @@ import { useModal } from '../context/ModalContext';
 import { getUserBookings, updateBookingStatus } from '../services/bookingService';
 import chatService from '../services/chatService';
 import RatingModal from '../components/RatingModal'; // eslint-disable-line no-unused-vars
+import ReviewModal from '../components/ReviewModal';
 
 const MyBookings = () => {
   const { user } = useAuth(); // eslint-disable-line no-unused-vars
@@ -18,6 +19,10 @@ const MyBookings = () => {
   const [showRating, setShowRating] = useState(false); // eslint-disable-line no-unused-vars
   const [ratingBooking, setRatingBooking] = useState(null); // eslint-disable-line no-unused-vars
   const [unreadCounts, setUnreadCounts] = useState({}); // New state for unread message counts
+  
+  // Review modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewBooking, setReviewBooking] = useState(null);
 
   useEffect(() => {
     fetchBookings();
@@ -157,6 +162,19 @@ const MyBookings = () => {
 
   const handleRatingSubmitted = () => { // eslint-disable-line no-unused-vars
     fetchBookings(); // Refresh bookings to show updated rating
+  };
+
+  // Handle opening review modal
+  const handleWriteReview = (booking) => {
+    console.log('🎯 REVIEW BUTTON CLICKED!');
+    setReviewBooking(booking);
+    setShowReviewModal(true);
+  };
+
+  // Handle review submission
+  const handleReviewSubmitted = () => {
+    fetchBookings(); // Refresh bookings after review submission
+    setReviewBooking(null);
   };
 
   const formatDate = (dateString) => {
@@ -582,6 +600,45 @@ const MyBookings = () => {
                       ❌ Cancel Booking
                     </button>
                   )}
+                  {(booking.status === 'completed' || booking.status === 'confirmed') && (
+                    <>
+                      <button
+                        onClick={() => {
+                          console.log('🔥 TEST BUTTON CLICKED!');
+                          alert('Test button working!');
+                        }}
+                        style={{
+                          background: 'red',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem',
+                          cursor: 'pointer',
+                          marginRight: '0.5rem'
+                        }}
+                      >
+                        🔥 TEST
+                      </button>
+                      <button
+                        onClick={() => handleWriteReview(booking)}
+                        style={{
+                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem',
+                          cursor: 'pointer',
+                          transition: 'opacity 0.2s'
+                        }}
+                        onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                        onMouseOut={(e) => e.target.style.opacity = '1'}
+                      >
+                        ⭐ Write Review
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -720,6 +777,21 @@ const MyBookings = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && reviewBooking && (
+        <ReviewModal
+          isOpen={showReviewModal}
+          onClose={() => {
+            setShowReviewModal(false);
+            setReviewBooking(null);
+          }}
+          serviceId={reviewBooking.service?.id || reviewBooking.service?._id}
+          serviceName={reviewBooking.service?.title}
+          booking={reviewBooking}
+          onReviewSubmitted={handleReviewSubmitted}
+        />
       )}
     </div>
   );

@@ -189,6 +189,15 @@ const Navbar = () => {
                                                         </Link>
                                                         
                                                         <Link 
+                                                            to="/admin/review-moderation" 
+                                                            className={`dropdown-item ${location.pathname === '/admin/review-moderation' ? 'active' : ''}`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            <span className="item-icon">⭐</span>
+                                                            Review Moderation
+                                                        </Link>
+                                                        
+                                                        <Link 
                                                             to="/admin/reports" 
                                                             className={`dropdown-item ${location.pathname === '/admin/reports' ? 'active' : ''}`}
                                                             onClick={closeMenu}
@@ -248,6 +257,15 @@ const Navbar = () => {
                                                                 >
                                                                     <span className="item-icon">⚡</span>
                                                                     Instant Service History
+                                                                </Link>
+                                                                
+                                                                <Link 
+                                                                    to="/my-reviews" 
+                                                                    className={`dropdown-item ${location.pathname === '/my-reviews' ? 'active' : ''}`}
+                                                                    onClick={closeMenu}
+                                                                >
+                                                                    <span className="item-icon">⭐</span>
+                                                                    My Reviews
                                                                 </Link>
                                                             </>
                                                         )}

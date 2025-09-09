@@ -26,6 +26,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import BannedUsers from './pages/BannedUsers';
 import ManageServices from './pages/ManageServices';
 import MyServices from './pages/MyServices';
+import MyReviews from './pages/MyReviews';
+import ReviewModeration from './pages/ReviewModeration';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/NavbarNew';
 
@@ -151,6 +153,16 @@ const App = () => {
                         }
                     />
                     
+                    {/* My Reviews route for users */}
+                    <Route 
+                        path="/my-reviews" 
+                        element={
+                            <ProtectedRoute allowedRoles={['user', 'customer', 'admin']}>
+                                <MyReviews />
+                            </ProtectedRoute>
+                        }
+                    />
+                    
                     {/* Booked Programs route for providers */}
                     <Route 
                         path="/booked-programs" 
@@ -183,6 +195,14 @@ const App = () => {
                         element={
                             <ProtectedRoute allowedRoles={['admin']}>
                                 <ManageServices />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route 
+                        path="/admin/review-moderation" 
+                        element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                                <ReviewModeration />
                             </ProtectedRoute>
                         }
                     />
