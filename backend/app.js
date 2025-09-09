@@ -43,6 +43,7 @@ const io = socketIo(server, {
 const allowedOrigins = [
     process.env.CLIENT_URL,
     'http://localhost:3000',
+    'http://localhost:3002',
     'https://one-for-all-6lpg.onrender.com',
     'https://one-for-all-8u10.onrender.com'
 ];

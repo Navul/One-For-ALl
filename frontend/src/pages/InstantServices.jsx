@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import GoogleMap from '../components/GoogleMap';
 import LocationPermission from '../components/LocationPermission';
+import './InstantServices.css';
 // All hooks and logic must be inside the component. No code here.
 
 const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL;
@@ -200,89 +201,321 @@ const InstantServices = ({ userRole = 'client' }) => {
     };
 
     return (
-        <div className="instant-services-container">
-            {/* Client: Request Instant Service Button */}
-
-            {/* Move the request button above the floating controls */}
-            {/* Move the request button above the floating controls box for better UI */}
-            {userRole === 'client' && (
-                <div style={{
-                    position: 'fixed',
-                    right: 32,
-                    bottom: 400, // 32px (box) + 120px (old button offset) + 24px (gap)
-                    zIndex: 1002,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
-                }}>
-                    <button
-                        onClick={() => setShowRequestModal(true)}
-                        style={{
-                            background: '#007bff', color: 'white', border: 'none', borderRadius: '6px',
-                            padding: '10px 22px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.12)'
-                        }}
-                    >
-                        + Request Instant Service
-                    </button>
-                </div>
-            )}
-
-            {/* Request Modal */}
-            {showRequestModal && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-                    background: 'rgba(0,0,0,0.25)', zIndex: 2001, display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                    <div style={{ background: '#fff', borderRadius: '10px', padding: '32px 28px', minWidth: 340, boxShadow: '0 4px 24px rgba(0,0,0,0.18)' }}>
-                        <h3 style={{ marginTop: 0 }}>Request Instant Service</h3>
-                        <div style={{ marginBottom: 16 }}>
-                            <label style={{ fontWeight: 'bold' }}>Service Type:</label><br />
-                            <select value={requestType} onChange={e => setRequestType(e.target.value)} style={{ width: '100%', padding: '7px', borderRadius: '5px', border: '1px solid #ccc' }}>
-                                <option value="general">General</option>
-                                <option value="plumbing">Plumbing</option>
-                                <option value="electrical">Electrical</option>
-                                <option value="cleaning">Cleaning</option>
-                                <option value="delivery">Delivery</option>
-                                <option value="personal">Personal Care</option>
-                                <option value="emergency">Emergency</option>
-                            </select>
+        <div className="instant-services-page">
+            <div className="instant-services-container">
+                {/* Header */}
+                <div className="instant-services-header">
+                    <div className="header-content">
+                        <h1>Live Providers Nearby</h1>
+                        <p>Connect with service providers in real-time</p>
+                        <div className={`connection-status ${socketConnected ? 'connected' : 'disconnected'}`}>
+                            <span className="status-indicator"></span>
+                            {socketConnected ? 'Connected' : 'Connecting...'}
                         </div>
-                        <div style={{ marginBottom: 16 }}>
-                            <label style={{ fontWeight: 'bold' }}>Phone Number:</label><br />
-                            <input
-                                type="tel"
-                                value={requestPhone}
-                                onChange={e => setRequestPhone(e.target.value)}
-                                placeholder="Enter your phone number"
-                                style={{ width: '100%', borderRadius: '5px', border: '1px solid #ccc', padding: '7px', fontSize: '15px' }}
-                                required
-                            />
-                        </div>
-                        <div style={{ marginBottom: 16 }}>
-                            <label style={{ fontWeight: 'bold' }}>Details/Notes:</label><br />
-                            <textarea value={requestNotes} onChange={e => setRequestNotes(e.target.value)} rows={3} style={{ width: '100%', borderRadius: '5px', border: '1px solid #ccc', padding: '7px' }} />
-                        </div>
-                        <div style={{ marginBottom: 16 }}>
-                            <label style={{ fontWeight: 'bold' }}>Location:</label><br />
-                            <span style={{ fontSize: '13px', color: '#333' }}>{userLocation ? `${userLocation.lat.toFixed(5)}, ${userLocation.lng.toFixed(5)}` : 'Not set'}</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                            <button onClick={() => setShowRequestModal(false)} style={{ background: '#eee', color: '#333', border: 'none', borderRadius: '5px', padding: '8px 18px', fontWeight: 'bold', fontSize: '15px' }}>Cancel</button>
-                            <button onClick={handlePostRequest} disabled={requestSubmitting} style={{ background: '#007bff', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 18px', fontWeight: 'bold', fontSize: '15px', opacity: requestSubmitting ? 0.7 : 1, cursor: requestSubmitting ? 'not-allowed' : 'pointer' }}>
-                                {requestSubmitting ? 'Posting...' : 'Post Request'}
-                            </button>
-                        </div>
-                        {requestSuccess && <div style={{ color: 'green', marginTop: 10 }}>Request posted!</div>}
-                        {acceptedNotification && userRole === 'client' && (
-                            <div style={{ color: '#2a3eb1', margin: '18px 0 0 0', fontWeight: 'bold', fontSize: '16px', background: '#eaf3ff', borderRadius: 8, padding: '12px 18px' }}>
-                                Your request has been accepted! You will be contacted by the provider soon.
-                            </div>
-                        )}
                     </div>
                 </div>
-            )}
-            {/* ...existing header, location, and filter UI code... */}
+
+                {/* Client: Request Instant Service Button */}
+                {userRole === 'client' && (
+                    <div className="floating-action">
+                        <button
+                            onClick={() => setShowRequestModal(true)}
+                            className="request-service-btn"
+                        >
+                            📍 Request Instant Service
+                        </button>
+                    </div>
+                )}
+
+                {/* Request Modal */}
+                {showRequestModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h3>Request Instant Service</h3>
+                                <button 
+                                    className="modal-close"
+                                    onClick={() => setShowRequestModal(false)}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="form-group">
+                                    <label>Service Type:</label>
+                                    <select 
+                                        value={requestType} 
+                                        onChange={e => setRequestType(e.target.value)} 
+                                        className="modern-select"
+                                    >
+                                        <option value="general">General</option>
+                                        <option value="plumbing">Plumbing</option>
+                                        <option value="electrical">Electrical</option>
+                                        <option value="cleaning">Cleaning</option>
+                                        <option value="delivery">Delivery</option>
+                                        <option value="personal">Personal Care</option>
+                                        <option value="emergency">Emergency</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Phone Number:</label>
+                                    <input
+                                        type="tel"
+                                        value={requestPhone}
+                                        onChange={e => setRequestPhone(e.target.value)}
+                                        placeholder="Enter your phone number"
+                                        className="modern-input"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Details/Notes:</label>
+                                    <textarea 
+                                        value={requestNotes} 
+                                        onChange={e => setRequestNotes(e.target.value)} 
+                                        rows={3} 
+                                        className="modern-textarea"
+                                        placeholder="Describe what you need..."
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Location:</label>
+                                    <div className="location-display">
+                                        {userLocation ? `${userLocation.lat.toFixed(5)}, ${userLocation.lng.toFixed(5)}` : 'Not set'}
+                                    </div>
+                                </div>
+                                {requestSuccess && (
+                                    <div className="success-message">
+                                        Request posted successfully!
+                                    </div>
+                                )}
+                                {acceptedNotification && userRole === 'client' && (
+                                    <div className="accepted-notification">
+                                        🎉 Your request has been accepted! You will be contacted by the provider soon.
+                                    </div>
+                                )}
+                            </div>
+                            <div className="modal-footer">
+                                <button 
+                                    onClick={() => setShowRequestModal(false)} 
+                                    className="btn-secondary"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handlePostRequest} 
+                                    disabled={requestSubmitting} 
+                                    className="btn-primary"
+                                >
+                                    {requestSubmitting ? (
+                                        <>
+                                            <span className="loading-spinner"></span>
+                                            Posting...
+                                        </>
+                                    ) : 'Post Request'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    )}
+
+                {/* Location Setup */}
+                {!userLocation && (
+                    <div className="location-setup-card">
+                        <div className="location-icon">📍</div>
+                        <h3>Set Your Location</h3>
+                        <p>We need your location to show nearby providers and calculate distances.</p>
+                        <LocationPermission onLocationUpdate={setUserLocation} />
+                        <div className="location-alternatives">
+                            <button 
+                                className="alt-location-btn"
+                                onClick={() => setShowManualLocation(!showManualLocation)}
+                            >
+                                📝 Enter Manually
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Manual Location Input */}
+                {showManualLocation && (
+                    <div className="manual-location-card">
+                        <h4>📍 Enter Location Manually</h4>
+                        <div className="coordinate-inputs">
+                            <input
+                                type="number"
+                                placeholder="Latitude"
+                                value={manualLat}
+                                onChange={e => setManualLat(e.target.value)}
+                                className="coordinate-input"
+                                step="any"
+                            />
+                            <input
+                                type="number"
+                                placeholder="Longitude"
+                                value={manualLng}
+                                onChange={e => setManualLng(e.target.value)}
+                                className="coordinate-input"
+                                step="any"
+                            />
+                            <button 
+                                onClick={() => {
+                                    if (manualLat && manualLng) {
+                                        setUserLocation({ lat: parseFloat(manualLat), lng: parseFloat(manualLng) });
+                                        setShowManualLocation(false);
+                                    }
+                                }}
+                                className="set-location-btn"
+                            >
+                                Set Location
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Error Alert */}
+                {error && (
+                    <div className="alert alert-error">
+                        <span className="alert-icon">⚠️</span>
+                        {error}
+                    </div>
+                )}
+
+                {/* Controls Section */}
+                {userLocation && (
+                    <div className="controls-section">
+                        <div className="location-info-card">
+                            <div className="location-badge">
+                                <span className="location-dot"></span>
+                                Location Set
+                            </div>
+                            <div className="coordinates">
+                                📍 {userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}
+                            </div>
+                            <button 
+                                onClick={() => setUserLocation(null)}
+                                className="change-location-btn"
+                            >
+                                Change Location
+                            </button>
+                        </div>
+                        
+                        <div className="filters-card">
+                            <div className="filter-group">
+                                <label>Service Category</label>
+                                <select 
+                                    value={selectedCategory} 
+                                    onChange={e => setSelectedCategory(e.target.value)}
+                                    className="modern-select"
+                                >
+                                    <option value="all">All Categories</option>
+                                    <option value="plumbing">Plumbing</option>
+                                    <option value="electrical">Electrical</option>
+                                    <option value="cleaning">Cleaning</option>
+                                    <option value="delivery">Delivery</option>
+                                    <option value="personal">Personal Care</option>
+                                    <option value="emergency">Emergency</option>
+                                </select>
+                            </div>
+                            
+                            <div className="filter-group">
+                                <label>Search Radius</label>
+                                <div className="radius-control">
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="50"
+                                        value={searchRadius}
+                                        onChange={e => setSearchRadius(parseInt(e.target.value))}
+                                        className="radius-slider"
+                                    />
+                                    <div className="radius-display">{searchRadius}km</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Main Content Area */}
+                {userLocation && (
+                    <div className="main-content">
+                        {/* Map Section */}
+                        <div className="map-section">
+                            <div className="map-container">
+                                <GoogleMap
+                                    userLocation={userLocation}
+                                    onLocationSelect={(lat, lng) => setUserLocation({ lat, lng })}
+                                    className={`map-container ${mapClickMode ? 'map-click-mode' : ''}`}
+                                    onlineUsers={filteredUsers}
+                                    currentUserLocation={userLocation}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Sidebar Section */}
+                        <div className="sidebar-section">
+                            <div className="sidebar-header">
+                                <h3>{userRole === 'provider' ? 'Live Clients Nearby' : 'Live Providers Nearby'}</h3>
+                                <div className={`connection-status ${socketConnected ? 'connected' : 'disconnected'}`}>
+                                    <span className="status-indicator"></span>
+                                    {socketConnected ? 'Live' : 'Offline'}
+                                </div>
+                                <div className="provider-count">
+                                    {filteredUsers.length} {userRole === 'provider' ? 'clients' : 'providers'} online
+                                </div>
+                            </div>
+                            
+                            <div className="providers-list">
+                                {loading ? (
+                                    <div className="empty-state">
+                                        <div className="empty-icon">⏳</div>
+                                        <h4>Loading...</h4>
+                                        <p>Finding nearby providers...</p>
+                                    </div>
+                                ) : filteredUsers.length === 0 ? (
+                                    <div className="empty-state">
+                                        <div className="empty-icon">🔍</div>
+                                        <h4>No Providers Found</h4>
+                                        <p>Try adjusting your search radius or category filter</p>
+                                    </div>
+                                ) : (
+                                    filteredUsers.map((user) => {
+                                        let distance = null;
+                                        if (userLocation && user.lat && user.lng) {
+                                            distance = getDistanceKm(userLocation.lat, userLocation.lng, user.lat, user.lng);
+                                        }
+                                        return (
+                                            <div key={user.id} className="provider-card">
+                                                <div className="provider-header">
+                                                    <div className="provider-avatar">
+                                                        {(user.name || 'U').charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div className="provider-info">
+                                                        <h4>{user.name || 'User'}</h4>
+                                                        <div className="provider-role">{user.role || 'provider'}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="provider-details">
+                                                    {user.category && (
+                                                        <span className="category-badge">{user.category}</span>
+                                                    )}
+                                                    {distance !== null && (
+                                                        <span className="distance-badge">{distance.toFixed(1)} km away</span>
+                                                    )}
+                                                </div>
+                                                <div className="provider-actions">
+                                                    <button className="contact-btn">
+                                                        📞 Contact
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
             {/* Client: Active Requests box */}
             {userRole === 'client' && (
@@ -563,9 +796,9 @@ const InstantServices = ({ userRole = 'client' }) => {
                     </ul>
                 </div>
             </div>
-            {/* ...existing styles... */}
         </div>
+    </div>
     );
-}
+};
 
 export default InstantServices;
